@@ -1,0 +1,2668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chess Unset</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#1a1a1a;color:#e8e4dc;font-family:monospace;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:16px;}
+h1{font-family:Georgia,serif;font-size:22px;font-weight:500;color:#e8e4dc;margin-bottom:2px;}
+.tgl{font-size:10px;color:#666;letter-spacing:0.1em;text-transform:uppercase;font-style:italic;margin-bottom:12px;}
+.outer{width:100%;max-width:860px;}
+.banner{background:#242424;border:0.5px solid #333;border-radius:6px;padding:6px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.bph{font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#555;font-weight:500;}
+.bmsg{font-size:11px;color:#e8e4dc;text-align:right;flex:1;}
+.bmsg em{color:#7eb8f7;font-style:normal;font-weight:500;}
+#trans{display:none;background:rgba(10,8,5,0.93);border-radius:5px;align-items:center;justify-content:center;gap:12px;padding:14px 0;margin-bottom:10px;}
+#trans.show{display:flex;}
+.tflag{font-size:34px;animation:wf 0.55s ease-in-out infinite alternate;}
+.ttitle{font-family:Georgia,serif;font-size:20px;font-weight:500;color:#f5e8c8;letter-spacing:0.05em;}
+@keyframes wf{from{transform:rotate(-14deg);}to{transform:rotate(14deg);}}
+.layout{display:flex;gap:10px;align-items:flex-start;}
+.ba{flex:0 0 auto;}
+.frame{background:#6b4423;padding:8px;border-radius:5px;display:inline-block;border:1px solid rgba(0,0,0,0.4);position:relative;}
+.flrow{display:flex;padding-left:16px;}
+.flc{width:48px;text-align:center;font-size:9px;color:#d4a96a;opacity:0.7;}
+.rrow{display:flex;}
+.rcc{display:flex;flex-direction:column;width:16px;}
+.rkl{height:48px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#d4a96a;opacity:0.7;}
+#board{display:grid;grid-template-columns:repeat(8,48px);border:1px solid rgba(0,0,0,0.4);overflow:hidden;border-radius:2px;}
+.sq{width:48px;height:48px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;user-select:none;transition:filter 0.07s;}
+.sq.lt{background:#f0d9b5;}.sq.dk{background:#b58863;}
+.sq.sel{background:#e8e84a!important;}
+.sq.lf{background:rgba(200,205,80,0.55)!important;}
+.sq.lt2{background:rgba(160,165,40,0.65)!important;}
+.sq.chk{background:rgba(210,40,40,0.65)!important;}
+.sq.dot::after{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:rgba(0,0,0,0.22);pointer-events:none;z-index:2;}
+.sq.ring::after{content:'';position:absolute;inset:0;border:4px solid rgba(0,0,0,0.22);pointer-events:none;z-index:2;}
+.sq.castle::after{content:'';position:absolute;inset:3px;border-radius:3px;border:3px solid rgba(210,170,20,0.8);pointer-events:none;z-index:2;}
+.sq.avail::after{content:'';position:absolute;inset:0;background:rgba(80,175,70,0.3);border:2px dashed rgba(60,145,50,0.7);pointer-events:none;z-index:2;}
+.sq.avail:hover::after{background:rgba(80,175,70,0.45);}
+.sq.resv{outline:2px solid rgba(210,110,20,0.65);outline-offset:-2px;}
+.sq:hover{filter:brightness(0.9);}
+.pc{display:block;pointer-events:none;}
+.mid{flex:0 0 auto;display:flex;flex-direction:column;gap:6px;width:112px;}
+.tray{background:#1e1e1e;border:0.5px solid #2e2e2e;border-radius:8px;padding:8px;}
+.traytit{font-size:9px;letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:6px;color:#444;}
+.traytit.act{color:#7eb8f7;}
+.pieces{display:flex;flex-wrap:wrap;gap:3px;}
+.tp{width:38px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:5px;border:0.5px solid #2e2e2e;background:#252525;cursor:pointer;transition:filter 0.1s,transform 0.1s;position:relative;}
+.tp:hover{filter:brightness(0.85);}
+.tp.tsel{border-color:rgba(210,195,30,0.85);transform:scale(1.07);background:rgba(220,210,50,0.14);}
+.tp.toff{opacity:0.13;pointer-events:none;}
+.tp.tro{opacity:0.25;pointer-events:none;}
+.tpc{position:absolute;bottom:1px;right:2px;font-size:8px;font-weight:500;color:#555;}
+.side{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px;}
+.card{background:#1e1e1e;border:0.5px solid #2e2e2e;border-radius:8px;padding:10px 12px;}
+.cardtit{font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:#444;font-weight:500;margin-bottom:6px;}
+.turn{font-family:Georgia,serif;font-size:16px;font-weight:500;color:#e8e4dc;margin-bottom:3px;}
+.smsg{font-size:11px;color:#888;}
+.smsg.warn{color:#e05555;font-weight:500;}
+.smsg.good{color:#5ab55a;}
+.btns{display:flex;flex-direction:column;gap:4px;}
+.btn{background:#1e1e1e;border:0.5px solid #2e2e2e;border-radius:5px;padding:7px 10px;font-size:11px;font-family:monospace;color:#e8e4dc;cursor:pointer;text-align:left;transition:background 0.1s;width:100%;}
+.btn:hover{background:#2a2a2a;}
+.modewrap{position:relative;}
+.modebtn{background:#1a3a5c;color:#7eb8f7;border:0.5px solid #1e4a7a;border-radius:5px;padding:7px 10px;font-size:11px;font-family:monospace;cursor:pointer;text-align:left;width:100%;}
+.modebtn:hover{background:#1e4070;}
+.modemenu{position:absolute;left:0;right:0;top:calc(100% + 3px);background:#1e1e1e;border:0.5px solid #333;border-radius:5px;z-index:50;overflow:hidden;display:none;box-shadow:0 4px 14px rgba(0,0,0,0.4);}
+.modemenu.open{display:block;}
+.mopt{padding:7px 10px;font-size:11px;font-family:monospace;color:#e8e4dc;cursor:pointer;transition:background 0.1s;}
+.mopt:hover{background:#2a2a2a;}
+.mopt.cur{font-weight:500;color:#7eb8f7;}
+.log{max-height:140px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#333 transparent;}
+.mrow{display:flex;gap:4px;margin-bottom:2px;font-size:10px;}
+.mn{color:#444;min-width:20px;}
+.mw{min-width:46px;color:#e8e4dc;}
+.mb{color:#888;}
+.mle{font-size:10px;color:#444;}
+.pe{font-size:10px;padding:2px 0;border-bottom:0.5px solid #282828;color:#777;line-height:1.4;}
+.pe:last-child{border-bottom:none;}
+.pep{color:#7eb8f7;font-weight:500;}
+.pec{color:#e8e4dc;}
+.caprow{font-size:14px;min-height:20px;display:flex;align-items:center;flex-wrap:wrap;gap:2px;margin-top:3px;}
+.caplbl{font-size:9px;color:#444;margin-right:3px;align-self:center;}
+.promodrop{position:absolute;inset:0;border-radius:3px;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center;z-index:30;}
+.promodrop.show{display:flex;}
+.promobox{background:#1e1e1e;border:0.5px solid #333;border-radius:8px;padding:16px 20px;text-align:center;}
+.promobox p{font-size:13px;color:#e8e4dc;margin-bottom:10px;}
+.promops{display:flex;gap:8px;justify-content:center;}
+.pp{font-size:38px;cursor:pointer;padding:4px 7px;border-radius:6px;border:0.5px solid #333;transition:background 0.1s,transform 0.1s;}
+.pp:hover{background:#2a2a2a;transform:scale(1.08);}
+.modal-back{position:fixed;inset:0;background:rgba(0,0,0,0.72);display:flex;align-items:center;justify-content:center;z-index:100;}
+.modal{background:#1e1e1e;border:0.5px solid #333;border-radius:10px;padding:26px 30px;width:370px;max-width:94vw;box-shadow:0 8px 36px rgba(0,0,0,0.5);}
+.modal h2{font-family:Georgia,serif;font-size:20px;font-weight:500;color:#e8e4dc;margin:0 0 4px;}
+.msub{font-size:11px;color:#555;margin-bottom:22px;font-style:italic;}
+.msec{margin-bottom:18px;}
+.mlbl{font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#555;font-weight:500;margin-bottom:8px;display:block;}
+.mgrp{display:flex;gap:4px;flex-wrap:wrap;}
+.mgopt{flex:1;min-width:0;padding:8px 4px;font-size:11px;font-family:monospace;color:#777;background:#252525;border:0.5px solid #2e2e2e;border-radius:5px;cursor:pointer;text-align:center;transition:all 0.12s;white-space:nowrap;}
+.mgopt:hover{color:#e8e4dc;background:#2a2a2a;}
+.mgopt.picked{background:#1a3a5c;color:#7eb8f7;border-color:transparent;font-weight:500;}
+.diffgrid{display:flex;gap:3px;}
+.diffbtn{flex:1;padding:8px 2px;font-size:12px;font-family:monospace;font-weight:500;color:#777;background:#252525;border:0.5px solid #2e2e2e;border-radius:5px;cursor:pointer;text-align:center;transition:all 0.1s;}
+.diffbtn:hover{color:#e8e4dc;background:#2a2a2a;}
+.diffbtn.picked{background:#1a3a5c;color:#7eb8f7;border-color:transparent;font-weight:700;}
+.summary{background:#252525;border:0.5px solid #2e2e2e;border-radius:5px;padding:9px 11px;margin-bottom:18px;font-size:11px;color:#888;display:none;line-height:1.7;}
+.summary.show{display:block;}
+.summary strong{color:#e8e4dc;}
+.startbtn{width:100%;padding:12px;font-size:14px;font-family:Georgia,serif;font-weight:500;color:#1a1a1a;background:#e8e4dc;border:none;border-radius:6px;cursor:pointer;transition:opacity 0.1s;margin-top:4px;letter-spacing:0.03em;}
+.startbtn:hover{opacity:0.88;}
+.startbtn:disabled{opacity:0.4;cursor:default;}
+.thinking{display:none;align-items:center;gap:6px;font-size:10px;color:#555;margin-top:4px;}
+.thinking.show{display:flex;}
+.tdot{width:5px;height:5px;border-radius:50%;background:#555;animation:td 1s ease-in-out infinite;}
+.tdot:nth-child(2){animation-delay:0.2s;}
+.tdot:nth-child(3){animation-delay:0.4s;}
+@keyframes td{0%,80%,100%{opacity:0.2;transform:scale(0.8);}40%{opacity:1;transform:scale(1.1);}}
+.rules{background:#1e1e1e;border:0.5px solid #2e2e2e;border-radius:8px;padding:10px 12px;font-size:10px;color:#555;line-height:1.7;}
+.rules b{color:#888;}
+</style>
+</head>
+<body>
+<div class="outer">
+<h1>Chess Unset</h1>
+<div class="tgl">The better version of chess 960</div>
+<div id="trans"><div class="tflag">&#127937;</div><div class="ttitle">Play begins</div></div>
+<div class="banner">
+  <span class="bph" id="phlbl">Setup Phase</span>
+  <span class="bmsg" id="phmsg">Loading...</span>
+</div>
+<div class="layout">
+  <div class="ba">
+    <div class="frame">
+      <div class="flrow" id="fltop"></div>
+      <div class="rrow"><div class="rcc" id="rcc"></div><div id="board"></div></div>
+      <div class="flrow" id="flbot" style="margin-top:2px;"></div>
+      <div class="promodrop" id="promo">
+        <div class="promobox"><p>Promote pawn to...</p><div class="promops" id="ppieces"></div></div>
+      </div>
+    </div>
+    <div id="capwrap" style="display:none;margin-top:5px;">
+      <div class="caprow" id="captop"></div>
+      <div class="caprow" id="capbot"></div>
+    </div>
+  </div>
+  <div class="mid" id="mid">
+    <div class="tray"><div class="traytit" id="tray-b-tt">Black</div><div class="pieces" id="tray-b-pcs"></div></div>
+    <div class="tray"><div class="traytit" id="tray-w-tt">White</div><div class="pieces" id="tray-w-pcs"></div></div>
+  </div>
+  <div class="side">
+    <div class="card">
+      <div class="turn" id="turn">Loading...</div>
+      <div class="smsg" id="smsg"></div>
+      <div class="thinking" id="thinking">
+        <div class="tdot"></div><div class="tdot"></div><div class="tdot"></div>
+        <span id="thinkinglbl">Thinking...</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="cardtit">Controls</div>
+      <div class="btns">
+        <button class="btn" id="btn-new">&#8635; New game</button>
+        <button class="btn" id="btn-undo">&#8592; Undo</button>
+        <button class="btn" id="btn-flip">&#8645; Flip board</button>
+        <div class="modewrap">
+          <button class="modebtn" id="mode-btn">&#9881; vs Computer &#9660;</button>
+          <div class="modemenu" id="mode-menu">
+            <div class="mopt cur" data-mode="cpu">vs Computer</div>
+            <div class="mopt" data-mode="local">2 Players (local)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="placecard">
+      <div class="cardtit">Placement log</div>
+      <div class="log" id="placelog"><div class="mle">No placements yet</div></div>
+    </div>
+    <div class="card" id="movecard" style="display:none;">
+      <div class="cardtit">Move history</div>
+      <div class="log" id="mlbody"><div class="mle">No moves yet</div></div>
+    </div>
+    <div class="card rules">
+      <b>Setup:</b> Place rooks first (not adjacent, gap between them). Then place remaining pieces &mdash; king must go between the rooks. The last open square between the rooks is reserved for the king.<br><br>
+      <b>Castling:</b> King slides next to rook, they swap places. Click the rook to castle.<br><br>
+      <b>Bishops:</b> No restriction &mdash; same or opposite colors allowed.
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="modal-back" id="modal" style="display:none;">
+  <div class="modal">
+    <h2>Chess Unset</h2>
+    <div class="msub">The better version of chess 960</div>
+    <div id="mod-cpu">
+      <div class="msec">
+        <span class="mlbl">Difficulty</span>
+        <div class="diffgrid" id="diffgrid"></div>
+      </div>
+      <div class="msec">
+        <span class="mlbl">Play as</span>
+        <div class="mgrp" id="color-grp">
+          <div class="mgopt picked" data-val="random">&#9646; Random</div>
+          <div class="mgopt" data-val="w">&#9651; White</div>
+          <div class="mgopt" data-val="b">&#9650; Black</div>
+        </div>
+      </div>
+      <div class="msec">
+        <span class="mlbl">Placement order</span>
+        <div class="mgrp" id="place-grp">
+          <div class="mgopt picked" data-val="random">&#9646; Random</div>
+          <div class="mgopt" data-val="first">First</div>
+          <div class="mgopt" data-val="second">Second</div>
+        </div>
+      </div>
+      <div class="summary" id="summary"></div>
+    </div>
+    <button class="startbtn" id="startbtn">Begin placement</button>
+  </div>
+</div>
+
+<script>
+/*
+ * Copyright (c) 2021, Jeff Hlywa (jhlywa@gmail.com)
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
+ *----------------------------------------------------------------------------*/
+
+var Chess = function (fen) {
+  var BLACK = 'b'
+  var WHITE = 'w'
+
+  var EMPTY = -1
+
+  var PAWN = 'p'
+  var KNIGHT = 'n'
+  var BISHOP = 'b'
+  var ROOK = 'r'
+  var QUEEN = 'q'
+  var KING = 'k'
+
+  var SYMBOLS = 'pnbrqkPNBRQK'
+
+  var DEFAULT_POSITION =
+    'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+
+  var POSSIBLE_RESULTS = ['1-0', '0-1', '1/2-1/2', '*']
+
+  var PAWN_OFFSETS = {
+    b: [16, 32, 17, 15],
+    w: [-16, -32, -17, -15],
+  }
+
+  var PIECE_OFFSETS = {
+    n: [-18, -33, -31, -14, 18, 33, 31, 14],
+    b: [-17, -15, 17, 15],
+    r: [-16, 1, 16, -1],
+    q: [-17, -16, -15, 1, 17, 16, 15, -1],
+    k: [-17, -16, -15, 1, 17, 16, 15, -1],
+  }
+
+  // prettier-ignore
+  var ATTACKS = [
+    20, 0, 0, 0, 0, 0, 0, 24,  0, 0, 0, 0, 0, 0,20, 0,
+     0,20, 0, 0, 0, 0, 0, 24,  0, 0, 0, 0, 0,20, 0, 0,
+     0, 0,20, 0, 0, 0, 0, 24,  0, 0, 0, 0,20, 0, 0, 0,
+     0, 0, 0,20, 0, 0, 0, 24,  0, 0, 0,20, 0, 0, 0, 0,
+     0, 0, 0, 0,20, 0, 0, 24,  0, 0,20, 0, 0, 0, 0, 0,
+     0, 0, 0, 0, 0,20, 2, 24,  2,20, 0, 0, 0, 0, 0, 0,
+     0, 0, 0, 0, 0, 2,53, 56, 53, 2, 0, 0, 0, 0, 0, 0,
+    24,24,24,24,24,24,56,  0, 56,24,24,24,24,24,24, 0,
+     0, 0, 0, 0, 0, 2,53, 56, 53, 2, 0, 0, 0, 0, 0, 0,
+     0, 0, 0, 0, 0,20, 2, 24,  2,20, 0, 0, 0, 0, 0, 0,
+     0, 0, 0, 0,20, 0, 0, 24,  0, 0,20, 0, 0, 0, 0, 0,
+     0, 0, 0,20, 0, 0, 0, 24,  0, 0, 0,20, 0, 0, 0, 0,
+     0, 0,20, 0, 0, 0, 0, 24,  0, 0, 0, 0,20, 0, 0, 0,
+     0,20, 0, 0, 0, 0, 0, 24,  0, 0, 0, 0, 0,20, 0, 0,
+    20, 0, 0, 0, 0, 0, 0, 24,  0, 0, 0, 0, 0, 0,20
+  ];
+
+  // prettier-ignore
+  var RAYS = [
+     17,  0,  0,  0,  0,  0,  0, 16,  0,  0,  0,  0,  0,  0, 15, 0,
+      0, 17,  0,  0,  0,  0,  0, 16,  0,  0,  0,  0,  0, 15,  0, 0,
+      0,  0, 17,  0,  0,  0,  0, 16,  0,  0,  0,  0, 15,  0,  0, 0,
+      0,  0,  0, 17,  0,  0,  0, 16,  0,  0,  0, 15,  0,  0,  0, 0,
+      0,  0,  0,  0, 17,  0,  0, 16,  0,  0, 15,  0,  0,  0,  0, 0,
+      0,  0,  0,  0,  0, 17,  0, 16,  0, 15,  0,  0,  0,  0,  0, 0,
+      0,  0,  0,  0,  0,  0, 17, 16, 15,  0,  0,  0,  0,  0,  0, 0,
+      1,  1,  1,  1,  1,  1,  1,  0, -1, -1,  -1,-1, -1, -1, -1, 0,
+      0,  0,  0,  0,  0,  0,-15,-16,-17,  0,  0,  0,  0,  0,  0, 0,
+      0,  0,  0,  0,  0,-15,  0,-16,  0,-17,  0,  0,  0,  0,  0, 0,
+      0,  0,  0,  0,-15,  0,  0,-16,  0,  0,-17,  0,  0,  0,  0, 0,
+      0,  0,  0,-15,  0,  0,  0,-16,  0,  0,  0,-17,  0,  0,  0, 0,
+      0,  0,-15,  0,  0,  0,  0,-16,  0,  0,  0,  0,-17,  0,  0, 0,
+      0,-15,  0,  0,  0,  0,  0,-16,  0,  0,  0,  0,  0,-17,  0, 0,
+    -15,  0,  0,  0,  0,  0,  0,-16,  0,  0,  0,  0,  0,  0,-17
+  ];
+
+  var SHIFTS = { p: 0, n: 1, b: 2, r: 3, q: 4, k: 5 }
+
+  var FLAGS = {
+    NORMAL: 'n',
+    CAPTURE: 'c',
+    BIG_PAWN: 'b',
+    EP_CAPTURE: 'e',
+    PROMOTION: 'p',
+    KSIDE_CASTLE: 'k',
+    QSIDE_CASTLE: 'q',
+  }
+
+  var BITS = {
+    NORMAL: 1,
+    CAPTURE: 2,
+    BIG_PAWN: 4,
+    EP_CAPTURE: 8,
+    PROMOTION: 16,
+    KSIDE_CASTLE: 32,
+    QSIDE_CASTLE: 64,
+  }
+
+  var RANK_1 = 7
+  var RANK_2 = 6
+  var RANK_3 = 5
+  var RANK_4 = 4
+  var RANK_5 = 3
+  var RANK_6 = 2
+  var RANK_7 = 1
+  var RANK_8 = 0
+
+  // prettier-ignore
+  var SQUARES = {
+    a8:   0, b8:   1, c8:   2, d8:   3, e8:   4, f8:   5, g8:   6, h8:   7,
+    a7:  16, b7:  17, c7:  18, d7:  19, e7:  20, f7:  21, g7:  22, h7:  23,
+    a6:  32, b6:  33, c6:  34, d6:  35, e6:  36, f6:  37, g6:  38, h6:  39,
+    a5:  48, b5:  49, c5:  50, d5:  51, e5:  52, f5:  53, g5:  54, h5:  55,
+    a4:  64, b4:  65, c4:  66, d4:  67, e4:  68, f4:  69, g4:  70, h4:  71,
+    a3:  80, b3:  81, c3:  82, d3:  83, e3:  84, f3:  85, g3:  86, h3:  87,
+    a2:  96, b2:  97, c2:  98, d2:  99, e2: 100, f2: 101, g2: 102, h2: 103,
+    a1: 112, b1: 113, c1: 114, d1: 115, e1: 116, f1: 117, g1: 118, h1: 119
+  };
+
+  var ROOKS = {
+    w: [
+      { square: SQUARES.a1, flag: BITS.QSIDE_CASTLE },
+      { square: SQUARES.h1, flag: BITS.KSIDE_CASTLE },
+    ],
+    b: [
+      { square: SQUARES.a8, flag: BITS.QSIDE_CASTLE },
+      { square: SQUARES.h8, flag: BITS.KSIDE_CASTLE },
+    ],
+  }
+
+  var board = new Array(128)
+  var kings = { w: EMPTY, b: EMPTY }
+  var turn = WHITE
+  var castling = { w: 0, b: 0 }
+  var ep_square = EMPTY
+  var half_moves = 0
+  var move_number = 1
+  var history = []
+  var header = {}
+  var comments = {}
+
+  /* if the user passes in a fen string, load it, else default to
+   * starting position
+   */
+  if (typeof fen === 'undefined') {
+    load(DEFAULT_POSITION)
+  } else {
+    load(fen)
+  }
+
+  function clear(keep_headers) {
+    if (typeof keep_headers === 'undefined') {
+      keep_headers = false
+    }
+
+    board = new Array(128)
+    kings = { w: EMPTY, b: EMPTY }
+    turn = WHITE
+    castling = { w: 0, b: 0 }
+    ep_square = EMPTY
+    half_moves = 0
+    move_number = 1
+    history = []
+    if (!keep_headers) header = {}
+    comments = {}
+    update_setup(generate_fen())
+  }
+
+  function prune_comments() {
+    var reversed_history = []
+    var current_comments = {}
+    var copy_comment = function (fen) {
+      if (fen in comments) {
+        current_comments[fen] = comments[fen]
+      }
+    }
+    while (history.length > 0) {
+      reversed_history.push(undo_move())
+    }
+    copy_comment(generate_fen())
+    while (reversed_history.length > 0) {
+      make_move(reversed_history.pop())
+      copy_comment(generate_fen())
+    }
+    comments = current_comments
+  }
+
+  function reset() {
+    load(DEFAULT_POSITION)
+  }
+
+  function load(fen, keep_headers) {
+    if (typeof keep_headers === 'undefined') {
+      keep_headers = false
+    }
+
+    var tokens = fen.split(/\s+/)
+    var position = tokens[0]
+    var square = 0
+
+    if (!validate_fen(fen).valid) {
+      return false
+    }
+
+    clear(keep_headers)
+
+    for (var i = 0; i < position.length; i++) {
+      var piece = position.charAt(i)
+
+      if (piece === '/') {
+        square += 8
+      } else if (is_digit(piece)) {
+        square += parseInt(piece, 10)
+      } else {
+        var color = piece < 'a' ? WHITE : BLACK
+        put({ type: piece.toLowerCase(), color: color }, algebraic(square))
+        square++
+      }
+    }
+
+    turn = tokens[1]
+
+    if (tokens[2].indexOf('K') > -1) {
+      castling.w |= BITS.KSIDE_CASTLE
+    }
+    if (tokens[2].indexOf('Q') > -1) {
+      castling.w |= BITS.QSIDE_CASTLE
+    }
+    if (tokens[2].indexOf('k') > -1) {
+      castling.b |= BITS.KSIDE_CASTLE
+    }
+    if (tokens[2].indexOf('q') > -1) {
+      castling.b |= BITS.QSIDE_CASTLE
+    }
+
+    ep_square = tokens[3] === '-' ? EMPTY : SQUARES[tokens[3]]
+    half_moves = parseInt(tokens[4], 10)
+    move_number = parseInt(tokens[5], 10)
+
+    update_setup(generate_fen())
+
+    return true
+  }
+
+  /* TODO: this function is pretty much crap - it validates structure but
+   * completely ignores content (e.g. doesn't verify that each side has a king)
+   * ... we should rewrite this, and ditch the silly error_number field while
+   * we're at it
+   */
+  function validate_fen(fen) {
+    var errors = {
+      0: 'No errors.',
+      1: 'FEN string must contain six space-delimited fields.',
+      2: '6th field (move number) must be a positive integer.',
+      3: '5th field (half move counter) must be a non-negative integer.',
+      4: '4th field (en-passant square) is invalid.',
+      5: '3rd field (castling availability) is invalid.',
+      6: '2nd field (side to move) is invalid.',
+      7: "1st field (piece positions) does not contain 8 '/'-delimited rows.",
+      8: '1st field (piece positions) is invalid [consecutive numbers].',
+      9: '1st field (piece positions) is invalid [invalid piece].',
+      10: '1st field (piece positions) is invalid [row too large].',
+      11: 'Illegal en-passant square',
+    }
+
+    /* 1st criterion: 6 space-seperated fields? */
+    var tokens = fen.split(/\s+/)
+    if (tokens.length !== 6) {
+      return { valid: false, error_number: 1, error: errors[1] }
+    }
+
+    /* 2nd criterion: move number field is a integer value > 0? */
+    if (isNaN(tokens[5]) || parseInt(tokens[5], 10) <= 0) {
+      return { valid: false, error_number: 2, error: errors[2] }
+    }
+
+    /* 3rd criterion: half move counter is an integer >= 0? */
+    if (isNaN(tokens[4]) || parseInt(tokens[4], 10) < 0) {
+      return { valid: false, error_number: 3, error: errors[3] }
+    }
+
+    /* 4th criterion: 4th field is a valid e.p.-string? */
+    if (!/^(-|[abcdefgh][36])$/.test(tokens[3])) {
+      return { valid: false, error_number: 4, error: errors[4] }
+    }
+
+    /* 5th criterion: 3th field is a valid castle-string? */
+    if (!/^(KQ?k?q?|Qk?q?|kq?|q|-)$/.test(tokens[2])) {
+      return { valid: false, error_number: 5, error: errors[5] }
+    }
+
+    /* 6th criterion: 2nd field is "w" (white) or "b" (black)? */
+    if (!/^(w|b)$/.test(tokens[1])) {
+      return { valid: false, error_number: 6, error: errors[6] }
+    }
+
+    /* 7th criterion: 1st field contains 8 rows? */
+    var rows = tokens[0].split('/')
+    if (rows.length !== 8) {
+      return { valid: false, error_number: 7, error: errors[7] }
+    }
+
+    /* 8th criterion: every row is valid? */
+    for (var i = 0; i < rows.length; i++) {
+      /* check for right sum of fields AND not two numbers in succession */
+      var sum_fields = 0
+      var previous_was_number = false
+
+      for (var k = 0; k < rows[i].length; k++) {
+        if (!isNaN(rows[i][k])) {
+          if (previous_was_number) {
+            return { valid: false, error_number: 8, error: errors[8] }
+          }
+          sum_fields += parseInt(rows[i][k], 10)
+          previous_was_number = true
+        } else {
+          if (!/^[prnbqkPRNBQK]$/.test(rows[i][k])) {
+            return { valid: false, error_number: 9, error: errors[9] }
+          }
+          sum_fields += 1
+          previous_was_number = false
+        }
+      }
+      if (sum_fields !== 8) {
+        return { valid: false, error_number: 10, error: errors[10] }
+      }
+    }
+
+    if (
+      (tokens[3][1] == '3' && tokens[1] == 'w') ||
+      (tokens[3][1] == '6' && tokens[1] == 'b')
+    ) {
+      return { valid: false, error_number: 11, error: errors[11] }
+    }
+
+    /* everything's okay! */
+    return { valid: true, error_number: 0, error: errors[0] }
+  }
+
+  function generate_fen() {
+    var empty = 0
+    var fen = ''
+
+    for (var i = SQUARES.a8; i <= SQUARES.h1; i++) {
+      if (board[i] == null) {
+        empty++
+      } else {
+        if (empty > 0) {
+          fen += empty
+          empty = 0
+        }
+        var color = board[i].color
+        var piece = board[i].type
+
+        fen += color === WHITE ? piece.toUpperCase() : piece.toLowerCase()
+      }
+
+      if ((i + 1) & 0x88) {
+        if (empty > 0) {
+          fen += empty
+        }
+
+        if (i !== SQUARES.h1) {
+          fen += '/'
+        }
+
+        empty = 0
+        i += 8
+      }
+    }
+
+    var cflags = ''
+    if (castling[WHITE] & BITS.KSIDE_CASTLE) {
+      cflags += 'K'
+    }
+    if (castling[WHITE] & BITS.QSIDE_CASTLE) {
+      cflags += 'Q'
+    }
+    if (castling[BLACK] & BITS.KSIDE_CASTLE) {
+      cflags += 'k'
+    }
+    if (castling[BLACK] & BITS.QSIDE_CASTLE) {
+      cflags += 'q'
+    }
+
+    /* do we have an empty castling flag? */
+    cflags = cflags || '-'
+    var epflags = ep_square === EMPTY ? '-' : algebraic(ep_square)
+
+    return [fen, turn, cflags, epflags, half_moves, move_number].join(' ')
+  }
+
+  function set_header(args) {
+    for (var i = 0; i < args.length; i += 2) {
+      if (typeof args[i] === 'string' && typeof args[i + 1] === 'string') {
+        header[args[i]] = args[i + 1]
+      }
+    }
+    return header
+  }
+
+  /* called when the initial board setup is changed with put() or remove().
+   * modifies the SetUp and FEN properties of the header object.  if the FEN is
+   * equal to the default position, the SetUp and FEN are deleted
+   * the setup is only updated if history.length is zero, ie moves haven't been
+   * made.
+   */
+  function update_setup(fen) {
+    if (history.length > 0) return
+
+    if (fen !== DEFAULT_POSITION) {
+      header['SetUp'] = '1'
+      header['FEN'] = fen
+    } else {
+      delete header['SetUp']
+      delete header['FEN']
+    }
+  }
+
+  function get(square) {
+    var piece = board[SQUARES[square]]
+    return piece ? { type: piece.type, color: piece.color } : null
+  }
+
+  function put(piece, square) {
+    /* check for valid piece object */
+    if (!('type' in piece && 'color' in piece)) {
+      return false
+    }
+
+    /* check for piece */
+    if (SYMBOLS.indexOf(piece.type.toLowerCase()) === -1) {
+      return false
+    }
+
+    /* check for valid square */
+    if (!(square in SQUARES)) {
+      return false
+    }
+
+    var sq = SQUARES[square]
+
+    /* don't let the user place more than one king */
+    if (
+      piece.type == KING &&
+      !(kings[piece.color] == EMPTY || kings[piece.color] == sq)
+    ) {
+      return false
+    }
+
+    board[sq] = { type: piece.type, color: piece.color }
+    if (piece.type === KING) {
+      kings[piece.color] = sq
+    }
+
+    update_setup(generate_fen())
+
+    return true
+  }
+
+  function remove(square) {
+    var piece = get(square)
+    board[SQUARES[square]] = null
+    if (piece && piece.type === KING) {
+      kings[piece.color] = EMPTY
+    }
+
+    update_setup(generate_fen())
+
+    return piece
+  }
+
+  function build_move(board, from, to, flags, promotion) {
+    var move = {
+      color: turn,
+      from: from,
+      to: to,
+      flags: flags,
+      piece: board[from].type,
+    }
+
+    if (promotion) {
+      move.flags |= BITS.PROMOTION
+      move.promotion = promotion
+    }
+
+    if (board[to]) {
+      move.captured = board[to].type
+    } else if (flags & BITS.EP_CAPTURE) {
+      move.captured = PAWN
+    }
+    return move
+  }
+
+  function generate_moves(options) {
+    function add_move(board, moves, from, to, flags) {
+      /* if pawn promotion */
+      if (
+        board[from].type === PAWN &&
+        (rank(to) === RANK_8 || rank(to) === RANK_1)
+      ) {
+        var pieces = [QUEEN, ROOK, BISHOP, KNIGHT]
+        for (var i = 0, len = pieces.length; i < len; i++) {
+          moves.push(build_move(board, from, to, flags, pieces[i]))
+        }
+      } else {
+        moves.push(build_move(board, from, to, flags))
+      }
+    }
+
+    var moves = []
+    var us = turn
+    var them = swap_color(us)
+    var second_rank = { b: RANK_7, w: RANK_2 }
+
+    var first_sq = SQUARES.a8
+    var last_sq = SQUARES.h1
+    var single_square = false
+
+    /* do we want legal moves? */
+    var legal =
+      typeof options !== 'undefined' && 'legal' in options
+        ? options.legal
+        : true
+
+    var piece_type =
+      typeof options !== 'undefined' &&
+      'piece' in options &&
+      typeof options.piece === 'string'
+        ? options.piece.toLowerCase()
+        : true
+
+    /* are we generating moves for a single square? */
+    if (typeof options !== 'undefined' && 'square' in options) {
+      if (options.square in SQUARES) {
+        first_sq = last_sq = SQUARES[options.square]
+        single_square = true
+      } else {
+        /* invalid square */
+        return []
+      }
+    }
+
+    for (var i = first_sq; i <= last_sq; i++) {
+      /* did we run off the end of the board */
+      if (i & 0x88) {
+        i += 7
+        continue
+      }
+
+      var piece = board[i]
+      if (piece == null || piece.color !== us) {
+        continue
+      }
+
+      if (piece.type === PAWN && (piece_type === true || piece_type === PAWN)) {
+        /* single square, non-capturing */
+        var square = i + PAWN_OFFSETS[us][0]
+        if (board[square] == null) {
+          add_move(board, moves, i, square, BITS.NORMAL)
+
+          /* double square */
+          var square = i + PAWN_OFFSETS[us][1]
+          if (second_rank[us] === rank(i) && board[square] == null) {
+            add_move(board, moves, i, square, BITS.BIG_PAWN)
+          }
+        }
+
+        /* pawn captures */
+        for (j = 2; j < 4; j++) {
+          var square = i + PAWN_OFFSETS[us][j]
+          if (square & 0x88) continue
+
+          if (board[square] != null && board[square].color === them) {
+            add_move(board, moves, i, square, BITS.CAPTURE)
+          } else if (square === ep_square) {
+            add_move(board, moves, i, ep_square, BITS.EP_CAPTURE)
+          }
+        }
+      } else if (piece_type === true || piece_type === piece.type) {
+        for (var j = 0, len = PIECE_OFFSETS[piece.type].length; j < len; j++) {
+          var offset = PIECE_OFFSETS[piece.type][j]
+          var square = i
+
+          while (true) {
+            square += offset
+            if (square & 0x88) break
+
+            if (board[square] == null) {
+              add_move(board, moves, i, square, BITS.NORMAL)
+            } else {
+              if (board[square].color === us) break
+              add_move(board, moves, i, square, BITS.CAPTURE)
+              break
+            }
+
+            /* break, if knight or king */
+            if (piece.type === 'n' || piece.type === 'k') break
+          }
+        }
+      }
+    }
+
+    /* check for castling if: a) we're generating all moves, or b) we're doing
+     * single square move generation on the king's square
+     */
+    if (piece_type === true || piece_type === KING) {
+      if (!single_square || last_sq === kings[us]) {
+        /* king-side castling */
+        if (castling[us] & BITS.KSIDE_CASTLE) {
+          var castling_from = kings[us]
+          var castling_to = castling_from + 2
+
+          if (
+            board[castling_from + 1] == null &&
+            board[castling_to] == null &&
+            !attacked(them, kings[us]) &&
+            !attacked(them, castling_from + 1) &&
+            !attacked(them, castling_to)
+          ) {
+            add_move(board, moves, kings[us], castling_to, BITS.KSIDE_CASTLE)
+          }
+        }
+
+        /* queen-side castling */
+        if (castling[us] & BITS.QSIDE_CASTLE) {
+          var castling_from = kings[us]
+          var castling_to = castling_from - 2
+
+          if (
+            board[castling_from - 1] == null &&
+            board[castling_from - 2] == null &&
+            board[castling_from - 3] == null &&
+            !attacked(them, kings[us]) &&
+            !attacked(them, castling_from - 1) &&
+            !attacked(them, castling_to)
+          ) {
+            add_move(board, moves, kings[us], castling_to, BITS.QSIDE_CASTLE)
+          }
+        }
+      }
+    }
+
+    /* return all pseudo-legal moves (this includes moves that allow the king
+     * to be captured)
+     */
+    if (!legal) {
+      return moves
+    }
+
+    /* filter out illegal moves */
+    var legal_moves = []
+    for (var i = 0, len = moves.length; i < len; i++) {
+      make_move(moves[i])
+      if (!king_attacked(us)) {
+        legal_moves.push(moves[i])
+      }
+      undo_move()
+    }
+
+    return legal_moves
+  }
+
+  /* convert a move from 0x88 coordinates to Standard Algebraic Notation
+   * (SAN)
+   *
+   * @param {boolean} sloppy Use the sloppy SAN generator to work around over
+   * disambiguation bugs in Fritz and Chessbase.  See below:
+   *
+   * r1bqkbnr/ppp2ppp/2n5/1B1pP3/4P3/8/PPPP2PP/RNBQK1NR b KQkq - 2 4
+   * 4. ... Nge7 is overly disambiguated because the knight on c6 is pinned
+   * 4. ... Ne7 is technically the valid SAN
+   */
+  function move_to_san(move, moves) {
+    var output = ''
+
+    if (move.flags & BITS.KSIDE_CASTLE) {
+      output = 'O-O'
+    } else if (move.flags & BITS.QSIDE_CASTLE) {
+      output = 'O-O-O'
+    } else {
+      if (move.piece !== PAWN) {
+        var disambiguator = get_disambiguator(move, moves)
+        output += move.piece.toUpperCase() + disambiguator
+      }
+
+      if (move.flags & (BITS.CAPTURE | BITS.EP_CAPTURE)) {
+        if (move.piece === PAWN) {
+          output += algebraic(move.from)[0]
+        }
+        output += 'x'
+      }
+
+      output += algebraic(move.to)
+
+      if (move.flags & BITS.PROMOTION) {
+        output += '=' + move.promotion.toUpperCase()
+      }
+    }
+
+    make_move(move)
+    if (in_check()) {
+      if (in_checkmate()) {
+        output += '#'
+      } else {
+        output += '+'
+      }
+    }
+    undo_move()
+
+    return output
+  }
+  // parses all of the decorators out of a SAN string
+  function stripped_san(move) {
+    return move.replace(/=/, '').replace(/[+#]?[?!]*$/, '')
+  }
+
+  function attacked(color, square) {
+    for (var i = SQUARES.a8; i <= SQUARES.h1; i++) {
+      /* did we run off the end of the board */
+      if (i & 0x88) {
+        i += 7
+        continue
+      }
+
+      /* if empty square or wrong color */
+      if (board[i] == null || board[i].color !== color) continue
+
+      var piece = board[i]
+      var difference = i - square
+      var index = difference + 119
+
+      if (ATTACKS[index] & (1 << SHIFTS[piece.type])) {
+        if (piece.type === PAWN) {
+          if (difference > 0) {
+            if (piece.color === WHITE) return true
+          } else {
+            if (piece.color === BLACK) return true
+          }
+          continue
+        }
+
+        /* if the piece is a knight or a king */
+        if (piece.type === 'n' || piece.type === 'k') return true
+
+        var offset = RAYS[index]
+        var j = i + offset
+
+        var blocked = false
+        while (j !== square) {
+          if (board[j] != null) {
+            blocked = true
+            break
+          }
+          j += offset
+        }
+
+        if (!blocked) return true
+      }
+    }
+
+    return false
+  }
+
+  function king_attacked(color) {
+    return attacked(swap_color(color), kings[color])
+  }
+
+  function in_check() {
+    return king_attacked(turn)
+  }
+
+  function in_checkmate() {
+    return in_check() && generate_moves().length === 0
+  }
+
+  function in_stalemate() {
+    return !in_check() && generate_moves().length === 0
+  }
+
+  function insufficient_material() {
+    var pieces = {}
+    var bishops = []
+    var num_pieces = 0
+    var sq_color = 0
+
+    for (var i = SQUARES.a8; i <= SQUARES.h1; i++) {
+      sq_color = (sq_color + 1) % 2
+      if (i & 0x88) {
+        i += 7
+        continue
+      }
+
+      var piece = board[i]
+      if (piece) {
+        pieces[piece.type] = piece.type in pieces ? pieces[piece.type] + 1 : 1
+        if (piece.type === BISHOP) {
+          bishops.push(sq_color)
+        }
+        num_pieces++
+      }
+    }
+
+    /* k vs. k */
+    if (num_pieces === 2) {
+      return true
+    } else if (
+      /* k vs. kn .... or .... k vs. kb */
+      num_pieces === 3 &&
+      (pieces[BISHOP] === 1 || pieces[KNIGHT] === 1)
+    ) {
+      return true
+    } else if (num_pieces === pieces[BISHOP] + 2) {
+      /* kb vs. kb where any number of bishops are all on the same color */
+      var sum = 0
+      var len = bishops.length
+      for (var i = 0; i < len; i++) {
+        sum += bishops[i]
+      }
+      if (sum === 0 || sum === len) {
+        return true
+      }
+    }
+
+    return false
+  }
+
+  function in_threefold_repetition() {
+    /* TODO: while this function is fine for casual use, a better
+     * implementation would use a Zobrist key (instead of FEN). the
+     * Zobrist key would be maintained in the make_move/undo_move functions,
+     * avoiding the costly that we do below.
+     */
+    var moves = []
+    var positions = {}
+    var repetition = false
+
+    while (true) {
+      var move = undo_move()
+      if (!move) break
+      moves.push(move)
+    }
+
+    while (true) {
+      /* remove the last two fields in the FEN string, they're not needed
+       * when checking for draw by rep */
+      var fen = generate_fen().split(' ').slice(0, 4).join(' ')
+
+      /* has the position occurred three or move times */
+      positions[fen] = fen in positions ? positions[fen] + 1 : 1
+      if (positions[fen] >= 3) {
+        repetition = true
+      }
+
+      if (!moves.length) {
+        break
+      }
+      make_move(moves.pop())
+    }
+
+    return repetition
+  }
+
+  function push(move) {
+    history.push({
+      move: move,
+      kings: { b: kings.b, w: kings.w },
+      turn: turn,
+      castling: { b: castling.b, w: castling.w },
+      ep_square: ep_square,
+      half_moves: half_moves,
+      move_number: move_number,
+    })
+  }
+
+  function make_move(move) {
+    var us = turn
+    var them = swap_color(us)
+    push(move)
+
+    board[move.to] = board[move.from]
+    board[move.from] = null
+
+    /* if ep capture, remove the captured pawn */
+    if (move.flags & BITS.EP_CAPTURE) {
+      if (turn === BLACK) {
+        board[move.to - 16] = null
+      } else {
+        board[move.to + 16] = null
+      }
+    }
+
+    /* if pawn promotion, replace with new piece */
+    if (move.flags & BITS.PROMOTION) {
+      board[move.to] = { type: move.promotion, color: us }
+    }
+
+    /* if we moved the king */
+    if (board[move.to].type === KING) {
+      kings[board[move.to].color] = move.to
+
+      /* if we castled, move the rook next to the king */
+      if (move.flags & BITS.KSIDE_CASTLE) {
+        var castling_to = move.to - 1
+        var castling_from = move.to + 1
+        board[castling_to] = board[castling_from]
+        board[castling_from] = null
+      } else if (move.flags & BITS.QSIDE_CASTLE) {
+        var castling_to = move.to + 1
+        var castling_from = move.to - 2
+        board[castling_to] = board[castling_from]
+        board[castling_from] = null
+      }
+
+      /* turn off castling */
+      castling[us] = ''
+    }
+
+    /* turn off castling if we move a rook */
+    if (castling[us]) {
+      for (var i = 0, len = ROOKS[us].length; i < len; i++) {
+        if (
+          move.from === ROOKS[us][i].square &&
+          castling[us] & ROOKS[us][i].flag
+        ) {
+          castling[us] ^= ROOKS[us][i].flag
+          break
+        }
+      }
+    }
+
+    /* turn off castling if we capture a rook */
+    if (castling[them]) {
+      for (var i = 0, len = ROOKS[them].length; i < len; i++) {
+        if (
+          move.to === ROOKS[them][i].square &&
+          castling[them] & ROOKS[them][i].flag
+        ) {
+          castling[them] ^= ROOKS[them][i].flag
+          break
+        }
+      }
+    }
+
+    /* if big pawn move, update the en passant square */
+    if (move.flags & BITS.BIG_PAWN) {
+      if (turn === 'b') {
+        ep_square = move.to - 16
+      } else {
+        ep_square = move.to + 16
+      }
+    } else {
+      ep_square = EMPTY
+    }
+
+    /* reset the 50 move counter if a pawn is moved or a piece is captured */
+    if (move.piece === PAWN) {
+      half_moves = 0
+    } else if (move.flags & (BITS.CAPTURE | BITS.EP_CAPTURE)) {
+      half_moves = 0
+    } else {
+      half_moves++
+    }
+
+    if (turn === BLACK) {
+      move_number++
+    }
+    turn = swap_color(turn)
+  }
+
+  function undo_move() {
+    var old = history.pop()
+    if (old == null) {
+      return null
+    }
+
+    var move = old.move
+    kings = old.kings
+    turn = old.turn
+    castling = old.castling
+    ep_square = old.ep_square
+    half_moves = old.half_moves
+    move_number = old.move_number
+
+    var us = turn
+    var them = swap_color(turn)
+
+    board[move.from] = board[move.to]
+    board[move.from].type = move.piece // to undo any promotions
+    board[move.to] = null
+
+    if (move.flags & BITS.CAPTURE) {
+      board[move.to] = { type: move.captured, color: them }
+    } else if (move.flags & BITS.EP_CAPTURE) {
+      var index
+      if (us === BLACK) {
+        index = move.to - 16
+      } else {
+        index = move.to + 16
+      }
+      board[index] = { type: PAWN, color: them }
+    }
+
+    if (move.flags & (BITS.KSIDE_CASTLE | BITS.QSIDE_CASTLE)) {
+      var castling_to, castling_from
+      if (move.flags & BITS.KSIDE_CASTLE) {
+        castling_to = move.to + 1
+        castling_from = move.to - 1
+      } else if (move.flags & BITS.QSIDE_CASTLE) {
+        castling_to = move.to - 2
+        castling_from = move.to + 1
+      }
+
+      board[castling_to] = board[castling_from]
+      board[castling_from] = null
+    }
+
+    return move
+  }
+
+  /* this function is used to uniquely identify ambiguous moves */
+  function get_disambiguator(move, moves) {
+    var from = move.from
+    var to = move.to
+    var piece = move.piece
+
+    var ambiguities = 0
+    var same_rank = 0
+    var same_file = 0
+
+    for (var i = 0, len = moves.length; i < len; i++) {
+      var ambig_from = moves[i].from
+      var ambig_to = moves[i].to
+      var ambig_piece = moves[i].piece
+
+      /* if a move of the same piece type ends on the same to square, we'll
+       * need to add a disambiguator to the algebraic notation
+       */
+      if (piece === ambig_piece && from !== ambig_from && to === ambig_to) {
+        ambiguities++
+
+        if (rank(from) === rank(ambig_from)) {
+          same_rank++
+        }
+
+        if (file(from) === file(ambig_from)) {
+          same_file++
+        }
+      }
+    }
+
+    if (ambiguities > 0) {
+      /* if there exists a similar moving piece on the same rank and file as
+       * the move in question, use the square as the disambiguator
+       */
+      if (same_rank > 0 && same_file > 0) {
+        return algebraic(from)
+      } else if (same_file > 0) {
+        /* if the moving piece rests on the same file, use the rank symbol as the
+         * disambiguator
+         */
+        return algebraic(from).charAt(1)
+      } else {
+        /* else use the file symbol */
+        return algebraic(from).charAt(0)
+      }
+    }
+
+    return ''
+  }
+
+  function infer_piece_type(san) {
+    var piece_type = san.charAt(0)
+    if (piece_type >= 'a' && piece_type <= 'h') {
+      var matches = san.match(/[a-h]\d.*[a-h]\d/)
+      if (matches) {
+        return undefined
+      }
+      return PAWN
+    }
+    piece_type = piece_type.toLowerCase()
+    if (piece_type === 'o') {
+      return KING
+    }
+    return piece_type
+  }
+  function ascii() {
+    var s = '   +------------------------+\n'
+    for (var i = SQUARES.a8; i <= SQUARES.h1; i++) {
+      /* display the rank */
+      if (file(i) === 0) {
+        s += ' ' + '87654321'[rank(i)] + ' |'
+      }
+
+      /* empty piece */
+      if (board[i] == null) {
+        s += ' . '
+      } else {
+        var piece = board[i].type
+        var color = board[i].color
+        var symbol = color === WHITE ? piece.toUpperCase() : piece.toLowerCase()
+        s += ' ' + symbol + ' '
+      }
+
+      if ((i + 1) & 0x88) {
+        s += '|\n'
+        i += 8
+      }
+    }
+    s += '   +------------------------+\n'
+    s += '     a  b  c  d  e  f  g  h\n'
+
+    return s
+  }
+
+  // convert a move from Standard Algebraic Notation (SAN) to 0x88 coordinates
+  function move_from_san(move, sloppy) {
+    // strip off any move decorations: e.g Nf3+?!
+    var clean_move = stripped_san(move)
+
+    // if we're using the sloppy parser run a regex to grab piece, to, and from
+    // this should parse invalid SAN like: Pe2-e4, Rc1c4, Qf3xf7
+    if (sloppy) {
+      var matches = clean_move.match(
+        /([pnbrqkPNBRQK])?([a-h][1-8])x?-?([a-h][1-8])([qrbnQRBN])?/
+      )
+      if (matches) {
+        var piece = matches[1]
+        var from = matches[2]
+        var to = matches[3]
+        var promotion = matches[4]
+      }
+    }
+    var piece_type = infer_piece_type(clean_move)
+    var moves = null
+    var legalMoves = generate_moves({
+      legal: true,
+      piece: piece ? piece : piece_type,
+    })
+    moves = legalMoves
+    if (sloppy) {
+      var illegalMoves = generate_moves({
+        legal: false,
+        piece: piece ? piece : piece_type,
+      })
+      moves = illegalMoves
+    }
+
+    for (var i = 0, len = moves.length; i < len; i++) {
+      // try the strict parser first, then the sloppy parser if requested
+      // by the user
+      if (
+        clean_move === stripped_san(move_to_san(moves[i], legalMoves)) ||
+        (sloppy &&
+          clean_move === stripped_san(move_to_san(moves[i], illegalMoves)))
+      ) {
+        return moves[i]
+      } else {
+        if (
+          matches &&
+          (!piece || piece.toLowerCase() == moves[i].piece) &&
+          SQUARES[from] == moves[i].from &&
+          SQUARES[to] == moves[i].to &&
+          (!promotion || promotion.toLowerCase() == moves[i].promotion)
+        ) {
+          return moves[i]
+        }
+      }
+    }
+
+    return null
+  }
+
+  /*****************************************************************************
+   * UTILITY FUNCTIONS
+   ****************************************************************************/
+  function rank(i) {
+    return i >> 4
+  }
+
+  function file(i) {
+    return i & 15
+  }
+
+  function algebraic(i) {
+    var f = file(i),
+      r = rank(i)
+    return 'abcdefgh'.substring(f, f + 1) + '87654321'.substring(r, r + 1)
+  }
+
+  function swap_color(c) {
+    return c === WHITE ? BLACK : WHITE
+  }
+
+  function is_digit(c) {
+    return '0123456789'.indexOf(c) !== -1
+  }
+
+  /* pretty = external move object */
+  function make_pretty(ugly_move) {
+    var move = clone(ugly_move)
+    move.san = move_to_san(move, generate_moves({ legal: true }))
+    move.to = algebraic(move.to)
+    move.from = algebraic(move.from)
+
+    var flags = ''
+
+    for (var flag in BITS) {
+      if (BITS[flag] & move.flags) {
+        flags += FLAGS[flag]
+      }
+    }
+    move.flags = flags
+
+    return move
+  }
+
+  function clone(obj) {
+    var dupe = obj instanceof Array ? [] : {}
+
+    for (var property in obj) {
+      if (typeof property === 'object') {
+        dupe[property] = clone(obj[property])
+      } else {
+        dupe[property] = obj[property]
+      }
+    }
+
+    return dupe
+  }
+
+  function trim(str) {
+    return str.replace(/^\s+|\s+$/g, '')
+  }
+
+  /*****************************************************************************
+   * DEBUGGING UTILITIES
+   ****************************************************************************/
+  function perft(depth) {
+    var moves = generate_moves({ legal: false })
+    var nodes = 0
+    var color = turn
+
+    for (var i = 0, len = moves.length; i < len; i++) {
+      make_move(moves[i])
+      if (!king_attacked(color)) {
+        if (depth - 1 > 0) {
+          var child_nodes = perft(depth - 1)
+          nodes += child_nodes
+        } else {
+          nodes++
+        }
+      }
+      undo_move()
+    }
+
+    return nodes
+  }
+
+  return {
+    /***************************************************************************
+     * PUBLIC CONSTANTS (is there a better way to do this?)
+     **************************************************************************/
+    WHITE: WHITE,
+    BLACK: BLACK,
+    PAWN: PAWN,
+    KNIGHT: KNIGHT,
+    BISHOP: BISHOP,
+    ROOK: ROOK,
+    QUEEN: QUEEN,
+    KING: KING,
+    SQUARES: (function () {
+      /* from the ECMA-262 spec (section 12.6.4):
+       * "The mechanics of enumerating the properties ... is
+       * implementation dependent"
+       * so: for (var sq in SQUARES) { keys.push(sq); } might not be
+       * ordered correctly
+       */
+      var keys = []
+      for (var i = SQUARES.a8; i <= SQUARES.h1; i++) {
+        if (i & 0x88) {
+          i += 7
+          continue
+        }
+        keys.push(algebraic(i))
+      }
+      return keys
+    })(),
+    FLAGS: FLAGS,
+
+    /***************************************************************************
+     * PUBLIC API
+     **************************************************************************/
+    load: function (fen) {
+      return load(fen)
+    },
+
+    reset: function () {
+      return reset()
+    },
+
+    moves: function (options) {
+      /* The internal representation of a chess move is in 0x88 format, and
+       * not meant to be human-readable.  The code below converts the 0x88
+       * square coordinates to algebraic coordinates.  It also prunes an
+       * unnecessary move keys resulting from a verbose call.
+       */
+
+      var ugly_moves = generate_moves(options)
+      var moves = []
+
+      for (var i = 0, len = ugly_moves.length; i < len; i++) {
+        /* does the user want a full move object (most likely not), or just
+         * SAN
+         */
+        if (
+          typeof options !== 'undefined' &&
+          'verbose' in options &&
+          options.verbose
+        ) {
+          moves.push(make_pretty(ugly_moves[i]))
+        } else {
+          moves.push(
+            move_to_san(ugly_moves[i], generate_moves({ legal: true }))
+          )
+        }
+      }
+
+      return moves
+    },
+
+    in_check: function () {
+      return in_check()
+    },
+
+    in_checkmate: function () {
+      return in_checkmate()
+    },
+
+    in_stalemate: function () {
+      return in_stalemate()
+    },
+
+    in_draw: function () {
+      return (
+        half_moves >= 100 ||
+        in_stalemate() ||
+        insufficient_material() ||
+        in_threefold_repetition()
+      )
+    },
+
+    insufficient_material: function () {
+      return insufficient_material()
+    },
+
+    in_threefold_repetition: function () {
+      return in_threefold_repetition()
+    },
+
+    game_over: function () {
+      return (
+        half_moves >= 100 ||
+        in_checkmate() ||
+        in_stalemate() ||
+        insufficient_material() ||
+        in_threefold_repetition()
+      )
+    },
+
+    validate_fen: function (fen) {
+      return validate_fen(fen)
+    },
+
+    fen: function () {
+      return generate_fen()
+    },
+
+    board: function () {
+      var output = [],
+        row = []
+
+      for (var i = SQUARES.a8; i <= SQUARES.h1; i++) {
+        if (board[i] == null) {
+          row.push(null)
+        } else {
+          row.push({ type: board[i].type, color: board[i].color })
+        }
+        if ((i + 1) & 0x88) {
+          output.push(row)
+          row = []
+          i += 8
+        }
+      }
+
+      return output
+    },
+
+    pgn: function (options) {
+      /* using the specification from http://www.chessclub.com/help/PGN-spec
+       * example for html usage: .pgn({ max_width: 72, newline_char: "<br />" })
+       */
+      var newline =
+        typeof options === 'object' && typeof options.newline_char === 'string'
+          ? options.newline_char
+          : '\n'
+      var max_width =
+        typeof options === 'object' && typeof options.max_width === 'number'
+          ? options.max_width
+          : 0
+      var result = []
+      var header_exists = false
+
+      /* add the PGN header headerrmation */
+      for (var i in header) {
+        /* TODO: order of enumerated properties in header object is not
+         * guaranteed, see ECMA-262 spec (section 12.6.4)
+         */
+        result.push('[' + i + ' "' + header[i] + '"]' + newline)
+        header_exists = true
+      }
+
+      if (header_exists && history.length) {
+        result.push(newline)
+      }
+
+      var append_comment = function (move_string) {
+        var comment = comments[generate_fen()]
+        if (typeof comment !== 'undefined') {
+          var delimiter = move_string.length > 0 ? ' ' : ''
+          move_string = `${move_string}${delimiter}{${comment}}`
+        }
+        return move_string
+      }
+
+      /* pop all of history onto reversed_history */
+      var reversed_history = []
+      while (history.length > 0) {
+        reversed_history.push(undo_move())
+      }
+
+      var moves = []
+      var move_string = ''
+
+      /* special case of a commented starting position with no moves */
+      if (reversed_history.length === 0) {
+        moves.push(append_comment(''))
+      }
+
+      /* build the list of moves.  a move_string looks like: "3. e3 e6" */
+      while (reversed_history.length > 0) {
+        move_string = append_comment(move_string)
+        var move = reversed_history.pop()
+
+        /* if the position started with black to move, start PGN with 1. ... */
+        if (!history.length && move.color === 'b') {
+          move_string = move_number + '. ...'
+        } else if (move.color === 'w') {
+          /* store the previous generated move_string if we have one */
+          if (move_string.length) {
+            moves.push(move_string)
+          }
+          move_string = move_number + '.'
+        }
+
+        move_string =
+          move_string +
+          ' ' +
+          move_to_san(move, generate_moves({ legal: false }))
+        make_move(move)
+      }
+
+      /* are there any other leftover moves? */
+      if (move_string.length) {
+        moves.push(append_comment(move_string))
+      }
+
+      /* is there a result? */
+      if (typeof header.Result !== 'undefined') {
+        moves.push(header.Result)
+      }
+
+      /* history should be back to what it was before we started generating PGN,
+       * so join together moves
+       */
+      if (max_width === 0) {
+        return result.join('') + moves.join(' ')
+      }
+
+      var strip = function () {
+        if (result.length > 0 && result[result.length - 1] === ' ') {
+          result.pop()
+          return true
+        }
+        return false
+      }
+
+      /* NB: this does not preserve comment whitespace. */
+      var wrap_comment = function (width, move) {
+        for (var token of move.split(' ')) {
+          if (!token) {
+            continue
+          }
+          if (width + token.length > max_width) {
+            while (strip()) {
+              width--
+            }
+            result.push(newline)
+            width = 0
+          }
+          result.push(token)
+          width += token.length
+          result.push(' ')
+          width++
+        }
+        if (strip()) {
+          width--
+        }
+        return width
+      }
+
+      /* wrap the PGN output at max_width */
+      var current_width = 0
+      for (var i = 0; i < moves.length; i++) {
+        if (current_width + moves[i].length > max_width) {
+          if (moves[i].includes('{')) {
+            current_width = wrap_comment(current_width, moves[i])
+            continue
+          }
+        }
+        /* if the current move will push past max_width */
+        if (current_width + moves[i].length > max_width && i !== 0) {
+          /* don't end the line with whitespace */
+          if (result[result.length - 1] === ' ') {
+            result.pop()
+          }
+
+          result.push(newline)
+          current_width = 0
+        } else if (i !== 0) {
+          result.push(' ')
+          current_width++
+        }
+        result.push(moves[i])
+        current_width += moves[i].length
+      }
+
+      return result.join('')
+    },
+
+    load_pgn: function (pgn, options) {
+      // allow the user to specify the sloppy move parser to work around over
+      // disambiguation bugs in Fritz and Chessbase
+      var sloppy =
+        typeof options !== 'undefined' && 'sloppy' in options
+          ? options.sloppy
+          : false
+
+      function mask(str) {
+        return str.replace(/\\/g, '\\')
+      }
+
+      function has_keys(object) {
+        for (var key in object) {
+          return true
+        }
+        return false
+      }
+
+      function parse_pgn_header(header, options) {
+        var newline_char =
+          typeof options === 'object' &&
+          typeof options.newline_char === 'string'
+            ? options.newline_char
+            : '\r?\n'
+        var header_obj = {}
+        var headers = header.split(new RegExp(mask(newline_char)))
+        var key = ''
+        var value = ''
+
+        for (var i = 0; i < headers.length; i++) {
+          key = headers[i].replace(/^\[([A-Z][A-Za-z]*)\s.*\]$/, '$1')
+          value = headers[i].replace(/^\[[A-Za-z]+\s"(.*)"\ *\]$/, '$1')
+          if (trim(key).length > 0) {
+            header_obj[key] = value
+          }
+        }
+
+        return header_obj
+      }
+
+      var newline_char =
+        typeof options === 'object' && typeof options.newline_char === 'string'
+          ? options.newline_char
+          : '\r?\n'
+
+      // RegExp to split header. Takes advantage of the fact that header and movetext
+      // will always have a blank line between them (ie, two newline_char's).
+      // With default newline_char, will equal: /^(\[((?:\r?\n)|.)*\])(?:\r?\n){2}/
+      var header_regex = new RegExp(
+        '^(\\[((?:' +
+          mask(newline_char) +
+          ')|.)*\\])' +
+          '(?:' +
+          mask(newline_char) +
+          '){2}'
+      )
+
+      // If no header given, begin with moves.
+      var header_string = header_regex.test(pgn)
+        ? header_regex.exec(pgn)[1]
+        : ''
+
+      // Put the board in the starting position
+      reset()
+
+      /* parse PGN header */
+      var headers = parse_pgn_header(header_string, options)
+      for (var key in headers) {
+        set_header([key, headers[key]])
+      }
+
+      /* load the starting position indicated by [Setup '1'] and
+       * [FEN position] */
+      if (headers['SetUp'] === '1') {
+        if (!('FEN' in headers && load(headers['FEN'], true))) {
+          // second argument to load: don't clear the headers
+          return false
+        }
+      }
+
+      /* NB: the regexes below that delete move numbers, recursive
+       * annotations, and numeric annotation glyphs may also match
+       * text in comments. To prevent this, we transform comments
+       * by hex-encoding them in place and decoding them again after
+       * the other tokens have been deleted.
+       *
+       * While the spec states that PGN files should be ASCII encoded,
+       * we use {en,de}codeURIComponent here to support arbitrary UTF8
+       * as a convenience for modern users */
+
+      var to_hex = function (string) {
+        return Array.from(string)
+          .map(function (c) {
+            /* encodeURI doesn't transform most ASCII characters,
+             * so we handle these ourselves */
+            return c.charCodeAt(0) < 128
+              ? c.charCodeAt(0).toString(16)
+              : encodeURIComponent(c).replace(/\%/g, '').toLowerCase()
+          })
+          .join('')
+      }
+
+      var from_hex = function (string) {
+        return string.length == 0
+          ? ''
+          : decodeURIComponent('%' + string.match(/.{1,2}/g).join('%'))
+      }
+
+      var encode_comment = function (string) {
+        string = string.replace(new RegExp(mask(newline_char), 'g'), ' ')
+        return `{${to_hex(string.slice(1, string.length - 1))}}`
+      }
+
+      var decode_comment = function (string) {
+        if (string.startsWith('{') && string.endsWith('}')) {
+          return from_hex(string.slice(1, string.length - 1))
+        }
+      }
+
+      /* delete header to get the moves */
+      var ms = pgn
+        .replace(header_string, '')
+        .replace(
+          /* encode comments so they don't get deleted below */
+          new RegExp(`(\{[^}]*\})+?|;([^${mask(newline_char)}]*)`, 'g'),
+          function (match, bracket, semicolon) {
+            return bracket !== undefined
+              ? encode_comment(bracket)
+              : ' ' + encode_comment(`{${semicolon.slice(1)}}`)
+          }
+        )
+        .replace(new RegExp(mask(newline_char), 'g'), ' ')
+
+      /* delete recursive annotation variations */
+      var rav_regex = /(\([^\(\)]+\))+?/g
+      while (rav_regex.test(ms)) {
+        ms = ms.replace(rav_regex, '')
+      }
+
+      /* delete move numbers */
+      ms = ms.replace(/\d+\.(\.\.)?/g, '')
+
+      /* delete ... indicating black to move */
+      ms = ms.replace(/\.\.\./g, '')
+
+      /* delete numeric annotation glyphs */
+      ms = ms.replace(/\$\d+/g, '')
+
+      /* trim and get array of moves */
+      var moves = trim(ms).split(new RegExp(/\s+/))
+
+      /* delete empty entries */
+      moves = moves.join(',').replace(/,,+/g, ',').split(',')
+      var move = ''
+
+      for (var half_move = 0; half_move < moves.length - 1; half_move++) {
+        var comment = decode_comment(moves[half_move])
+        if (comment !== undefined) {
+          comments[generate_fen()] = comment
+          continue
+        }
+        move = move_from_san(moves[half_move], sloppy)
+
+        /* move not possible! (don't clear the board to examine to show the
+         * latest valid position)
+         */
+        if (move == null) {
+          return false
+        } else {
+          make_move(move)
+        }
+      }
+
+      comment = decode_comment(moves[moves.length - 1])
+      if (comment !== undefined) {
+        comments[generate_fen()] = comment
+        moves.pop()
+      }
+
+      /* examine last move */
+      move = moves[moves.length - 1]
+      if (POSSIBLE_RESULTS.indexOf(move) > -1) {
+        if (has_keys(header) && typeof header.Result === 'undefined') {
+          set_header(['Result', move])
+        }
+      } else {
+        move = move_from_san(move, sloppy)
+        if (move == null) {
+          return false
+        } else {
+          make_move(move)
+        }
+      }
+      return true
+    },
+
+    header: function () {
+      return set_header(arguments)
+    },
+
+    ascii: function () {
+      return ascii()
+    },
+
+    turn: function () {
+      return turn
+    },
+
+    move: function (move, options) {
+      /* The move function can be called with in the following parameters:
+       *
+       * .move('Nxb7')      <- where 'move' is a case-sensitive SAN string
+       *
+       * .move({ from: 'h7', <- where the 'move' is a move object (additional
+       *         to :'h8',      fields are ignored)
+       *         promotion: 'q',
+       *      })
+       */
+
+      // allow the user to specify the sloppy move parser to work around over
+      // disambiguation bugs in Fritz and Chessbase
+      var sloppy =
+        typeof options !== 'undefined' && 'sloppy' in options
+          ? options.sloppy
+          : false
+
+      var move_obj = null
+
+      if (typeof move === 'string') {
+        move_obj = move_from_san(move, sloppy)
+      } else if (typeof move === 'object') {
+        var moves = generate_moves()
+
+        /* convert the pretty move object to an ugly move object */
+        for (var i = 0, len = moves.length; i < len; i++) {
+          if (
+            move.from === algebraic(moves[i].from) &&
+            move.to === algebraic(moves[i].to) &&
+            (!('promotion' in moves[i]) ||
+              move.promotion === moves[i].promotion)
+          ) {
+            move_obj = moves[i]
+            break
+          }
+        }
+      }
+
+      /* failed to find move */
+      if (!move_obj) {
+        return null
+      }
+
+      /* need to make a copy of move because we can't generate SAN after the
+       * move is made
+       */
+      var pretty_move = make_pretty(move_obj)
+
+      make_move(move_obj)
+
+      return pretty_move
+    },
+
+    undo: function () {
+      var move = undo_move()
+      return move ? make_pretty(move) : null
+    },
+
+    clear: function () {
+      return clear()
+    },
+
+    put: function (piece, square) {
+      return put(piece, square)
+    },
+
+    get: function (square) {
+      return get(square)
+    },
+
+    remove: function (square) {
+      return remove(square)
+    },
+
+    perft: function (depth) {
+      return perft(depth)
+    },
+
+    square_color: function (square) {
+      if (square in SQUARES) {
+        var sq_0x88 = SQUARES[square]
+        return (rank(sq_0x88) + file(sq_0x88)) % 2 === 0 ? 'light' : 'dark'
+      }
+
+      return null
+    },
+
+    history: function (options) {
+      var reversed_history = []
+      var move_history = []
+      var verbose =
+        typeof options !== 'undefined' &&
+        'verbose' in options &&
+        options.verbose
+
+      while (history.length > 0) {
+        reversed_history.push(undo_move())
+      }
+
+      while (reversed_history.length > 0) {
+        var move = reversed_history.pop()
+        if (verbose) {
+          move_history.push(make_pretty(move))
+        } else {
+          move_history.push(move_to_san(move, generate_moves({ legal: true })))
+        }
+        make_move(move)
+      }
+
+      return move_history
+    },
+
+    get_comment: function () {
+      return comments[generate_fen()]
+    },
+
+    set_comment: function (comment) {
+      comments[generate_fen()] = comment.replace('{', '[').replace('}', ']')
+    },
+
+    delete_comment: function () {
+      var comment = comments[generate_fen()]
+      delete comments[generate_fen()]
+      return comment
+    },
+
+    get_comments: function () {
+      prune_comments()
+      return Object.keys(comments).map(function (fen) {
+        return { fen: fen, comment: comments[fen] }
+      })
+    },
+
+    delete_comments: function () {
+      prune_comments()
+      return Object.keys(comments).map(function (fen) {
+        var comment = comments[fen]
+        delete comments[fen]
+        return { fen: fen, comment: comment }
+      })
+    },
+  }
+}
+
+/* export Chess object if using node or any other CommonJS compatible
+ * environment */
+if (typeof exports !== 'undefined') exports.Chess = Chess
+/* export Chess object for any RequireJS compatible environment */
+if (typeof define !== 'undefined')
+  define(function () {
+    return Chess
+  })
+
+</script>
+<script>
+(function(){
+'use strict';
+var CG=(typeof Chess!=='undefined')?Chess:null;
+if(!CG){document.getElementById('smsg').textContent='Error: chess library not found.';return;}
+
+var GLYPH={wK:'\u2654',wQ:'\u2655',wR:'\u2656',wB:'\u2657',wN:'\u2658',wP:'\u2659',
+           bK:'\u265A',bQ:'\u265B',bR:'\u265C',bB:'\u265D',bN:'\u265E',bP:'\u265F'};
+var PNAMES={k:'King',q:'Queen',r:'Rook',b:'Bishop',n:'Knight'};
+var FILES=['a','b','c','d','e','f','g','h'];
+var DEPTHS=[0,1,1,2,2,3,3,4,4,5,5];
+function sqCol(fi){return fi%2;}
+function $(id){return document.getElementById(id);}
+function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
+
+var phase,flipped,gameMode,S,P;
+var cfgDiff=5,cfgColor='random',cfgPlace='random',mmDepth=3;
+
+function mkPiece(color,type,size){
+  size=size||42;
+  var g=GLYPH[(color==='w'?'w':'b')+type.toUpperCase()];
+  var fill=color==='w'?'#ffffff':'#1a1a1a';
+  var stroke=color==='w'?'#3a200e':'#aaaaaa';
+  var sw=color==='w'?1.2:0.8;
+  var fs=Math.round(size*0.84);
+  var svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('width',size);svg.setAttribute('height',size);
+  svg.setAttribute('viewBox','0 0 '+size+' '+size);svg.classList.add('pc');
+  function mkt(f,s,sw2){
+    var t=document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('x','50%');t.setAttribute('y','52%');
+    t.setAttribute('dominant-baseline','central');t.setAttribute('text-anchor','middle');
+    t.setAttribute('font-size',fs);t.setAttribute('font-family','Georgia,serif');
+    t.setAttribute('fill',f);t.setAttribute('stroke',s);t.setAttribute('stroke-width',sw2);
+    t.setAttribute('stroke-linejoin','round');t.textContent=g;return t;
+  }
+  svg.appendChild(mkt(fill,fill,'5'));svg.appendChild(mkt(fill,stroke,sw));return svg;
+}
+
+function isAttacked(ch,sq,byColor){
+  var enemy=byColor==='w'?'b':'w';
+  var s2=new CG(ch.fen());s2.remove(sq);s2.put({type:'q',color:enemy},sq);
+  var parts=s2.fen().split(' ');parts[1]=byColor;parts[2]='-';parts[3]='-';
+  var s3=new CG(parts.join(' '));
+  var mvs=s3.moves({verbose:true});
+  for(var i=0;i<mvs.length;i++) if(mvs[i].to===sq) return true;
+  return false;
+}
+
+function setPhase(p){
+  phase=p;
+  $('phlbl').textContent=p==='setup'?'Setup Phase':'Play Phase';
+  $('mid').style.display=p==='setup'?'':'none';
+  $('capwrap').style.display=p==='play'?'':'none';
+  $('placecard').style.display=p==='setup'?'':'none';
+  $('movecard').style.display=p==='play'?'':'none';
+}
+
+var mm=$('mode-menu');
+$('mode-btn').addEventListener('click',function(e){e.stopPropagation();mm.classList.toggle('open');});
+document.addEventListener('click',function(){mm.classList.remove('open');});
+mm.addEventListener('click',function(e){
+  var opt=e.target.closest('.mopt');if(!opt) return;
+  mm.querySelectorAll('.mopt').forEach(function(o){o.classList.remove('cur');});
+  opt.classList.add('cur');
+  $('mode-btn').textContent='\u2699 '+opt.textContent.trim()+' \u25be';
+  gameMode=opt.dataset.mode;mm.classList.remove('open');showModal();
+});
+
+function buildDiffGrid(){
+  var grid=$('diffgrid');grid.innerHTML='';
+  for(var i=1;i<=10;i++){
+    var btn=document.createElement('div');
+    btn.className='diffbtn'+(i===cfgDiff?' picked':'');
+    btn.textContent=i;btn.dataset.lvl=i;
+    btn.addEventListener('click',function(){
+      cfgDiff=parseInt(this.dataset.lvl);
+      grid.querySelectorAll('.diffbtn').forEach(function(b){b.classList.remove('picked');});
+      this.classList.add('picked');
+    });
+    grid.appendChild(btn);
+  }
+}
+function showModal(){
+  $('mod-cpu').style.display=gameMode==='cpu'?'':'none';
+  $('summary').className='summary';buildDiffGrid();$('modal').style.display='flex';
+}
+function hideModal(){$('modal').style.display='none';}
+function wireGrp(id,cb){
+  $(id).addEventListener('click',function(e){
+    var opt=e.target.closest('.mgopt');if(!opt) return;
+    $(id).querySelectorAll('.mgopt').forEach(function(o){o.classList.remove('picked');});
+    opt.classList.add('picked');cb(opt.dataset.val);
+  });
+}
+wireGrp('color-grp',function(v){cfgColor=v;});
+wireGrp('place-grp',function(v){cfgPlace=v;});
+
+$('startbtn').addEventListener('click',function(){
+  var color=cfgColor==='random'?pick(['w','b']):cfgColor;
+  var place=cfgPlace==='random'?pick(['first','second']):cfgPlace;
+  if(gameMode==='cpu'&&(cfgColor==='random'||cfgPlace==='random')){
+    var sum=$('summary');
+    sum.innerHTML='Playing as <strong>'+(color==='w'?'White':'Black')+'</strong>, <strong>'+(place==='first'?'first':'second')+' placement</strong>.';
+    sum.className='summary show';
+    $('startbtn').disabled=true;
+    setTimeout(function(){$('startbtn').disabled=false;hideModal();startGame(color,place);},1100);
+    return;
+  }
+  hideModal();startGame(color,place);
+});
+function startGame(color,place){mmDepth=DEPTHS[cfgDiff]||3;flipped=(color==='b');initSetup(color,place);}
+
+function initSetup(humanColor,humanPlacement){
+  S={b8:[null,null,null,null,null,null,null,null],b8b:[null,null,null,null,null,null,null,null],
+     wr:{k:1,q:1,r:2,b:2,n:2},br:{k:1,q:1,r:2,b:2,n:2},
+     turn:0,sel:null,log:[],humanColor:humanColor,humanIsP0:(humanPlacement==='first'),kingPlaced:false};
+  setPhase('setup');renderBoard();renderTrays();renderSetupStatus();renderPlaceLog();
+  if(gameMode==='cpu'&&!isHumanSetupTurn()) setTimeout(cpuSetup,500);
+}
+function curProp(){return S.turn%2===0?'w':'b';}
+function activeColor(){
+  if(gameMode!=='cpu') return curProp();
+  var isP0=(S.turn%2===0);
+  return (isP0===S.humanIsP0)?S.humanColor:(S.humanColor==='w'?'b':'w');
+}
+function isHumanSetupTurn(){if(gameMode==='local') return true;return(S.turn%2===0)===S.humanIsP0;}
+function rooksDone(){return rookFiles().length>=2;}
+function rookFiles(){var r=[];for(var f=0;f<8;f++) if(S.b8[f]&&S.b8[f].p==='r') r.push(f);return r;}
+function rookPair(){var rf=rookFiles();if(rf.length<2) return null;return{left:rf[0],right:rf[rf.length-1]};}
+function inGap(f){var rp=rookPair();return rp&&f>rp.left&&f<rp.right;}
+function emptyBetween(lo,hi){var n=0;for(var f=lo+1;f<hi;f++) if(S.b8[f]===null) n++;return n;}
+function lastGapSq(){
+  if(S.kingPlaced) return -1;
+  var rp=rookPair();if(!rp) return -1;
+  var empty=-1,cnt=0;
+  for(var f=rp.left+1;f<rp.right;f++) if(S.b8[f]===null){cnt++;empty=f;}
+  return cnt===1?empty:-1;
+}
+function totalEmpty(){var n=0;for(var f=0;f<8;f++) if(S.b8[f]===null) n++;return n;}
+
+function isLegalFor(f,p){
+  if(!rooksDone()&&p!=='r') return false;
+  if(p==='r'){
+    var rooks=rookFiles();if(rooks.length>=2) return false;
+    if(rooks.length===1){
+      if(Math.abs(f-rooks[0])<=1) return false;
+      var lo=Math.min(f,rooks[0]),hi=Math.max(f,rooks[0]);
+      if(emptyBetween(lo,hi)<1) return false;
+    }
+    return true;
+  }
+  var lgs=lastGapSq();
+  if(p==='k') return inGap(f);
+  if(lgs!==-1&&f===lgs) return false;
+  return true;
+}
+function availFs(p){
+  var res=[];
+  for(var f=0;f<8;f++){if(S.b8[f]!==null) continue;if(isLegalFor(f,p)) res.push(f);}
+  if(res.length===0&&totalEmpty()===1) for(var f2=0;f2<8;f2++) if(S.b8[f2]===null){res.push(f2);break;}
+  return res;
+}
+function doPlace(piece,fi){
+  var prop=activeColor();
+  S.b8[fi]={p:piece,c:'w'};S.b8b[fi]={p:piece,c:'b'};S.wr[piece]--;S.br[piece]--;
+  if(piece==='k') S.kingPlaced=true;
+  var pn=prop==='w'?'White':'Black',mn=prop==='w'?'Black':'White';
+  var sqW=FILES[fi]+'1',sqB=FILES[fi]+'8';
+  S.log.push({prop:prop,p:piece,sq:prop==='w'?sqW:sqB,msq:prop==='w'?sqB:sqW,turn:S.turn,pn:pn,mn:mn});
+  S.turn++;
+}
+function handleSetupClick(fi){
+  if(!isHumanSetupTurn()||!S.sel) return;
+  var av=availFs(S.sel),ok=false;
+  for(var i=0;i<av.length;i++) if(av[i]===fi){ok=true;break;}
+  if(!ok) return;
+  doPlace(S.sel,fi);S.sel=null;
+  renderBoard();renderTrays();renderPlaceLog();renderSetupStatus();
+  if(S.turn>=8){setTimeout(function(){showTransition(function(){initPlay(buildFEN());});},200);return;}
+  if(gameMode==='cpu'&&!isHumanSetupTurn()) setTimeout(cpuSetup,600);
+}
+function cpuSetup(){
+  if(isHumanSetupTurn()||S.turn>=8) return;
+  var rem=activeColor()==='w'?S.wr:S.br;
+  var pp=rooksDone()?['k','q','b','n']:['r'],choices=[];
+  for(var i=0;i<pp.length;i++){
+    var pc=pp[i];if((rem[pc]||0)===0) continue;
+    var fs=availFs(pc);for(var j=0;j<fs.length;j++) choices.push({p:pc,fi:fs[j]});
+  }
+  if(!choices.length) return;
+  var ch=choices[Math.floor(Math.random()*choices.length)];
+  doPlace(ch.p,ch.fi);renderBoard();renderTrays();renderPlaceLog();renderSetupStatus();
+  if(S.turn>=8) setTimeout(function(){showTransition(function(){initPlay(buildFEN());});},200);
+}
+function showTransition(cb){
+  var bar=$('trans');bar.classList.add('show');setTimeout(function(){bar.classList.remove('show');cb();},1500);
+}
+function renderTrays(){if(phase!=='setup') return;renderOneTray('w');renderOneTray('b');}
+function renderOneTray(color){
+  var prop=activeColor(),isCurProp=(prop===color);
+  var humanCtrl=gameMode==='local'||(color===S.humanColor);
+  var interactive=isCurProp&&humanCtrl&&isHumanSetupTurn();
+  var rem=color==='w'?S.wr:S.br;
+  var ttEl=$(color==='w'?'tray-w-tt':'tray-b-tt');
+  var pcEl=$(color==='w'?'tray-w-pcs':'tray-b-pcs');
+  ttEl.textContent=(color==='w'?'White':'Black')+(isCurProp?' \u2022':'');
+  ttEl.className='traytit'+(isCurProp?' act':'');pcEl.innerHTML='';
+  var order=rooksDone()?['k','q','b','n']:['r'];
+  for(var i=0;i<order.length;i++){
+    var p=order[i],cnt=rem[p]||0;
+    var avail=cnt>0?availFs(p):[];var hasF=avail.length>0;
+    var cls='tp';
+    if(cnt===0) cls+=' toff';else if(!interactive) cls+=' tro';else if(!hasF) cls+=' toff';else if(S.sel===p) cls+=' tsel';
+    var el=document.createElement('div');el.className=cls;el.appendChild(mkPiece(color,p,30));
+    if(cnt>1){var c=document.createElement('span');c.className='tpc';c.textContent='\xd7'+cnt;el.appendChild(c);}
+    if(interactive&&hasF){
+      (function(piece){el.addEventListener('click',function(){S.sel=(S.sel===piece)?null:piece;renderTrays();renderBoard();renderSetupStatus();});})(p);
+    }
+    pcEl.appendChild(el);
+  }
+}
+function renderSetupStatus(){
+  if(S.turn>=8){$('turn').textContent='Setup complete';$('smsg').textContent='Starting game...';$('smsg').className='smsg good';$('phmsg').innerHTML='All pieces placed';return;}
+  var pn=activeColor()==='w'?'White':'Black';
+  var pl=rooksDone()?'Place pieces freely (king goes between rooks)':'Place a rook';
+  $('turn').textContent=pn+' to place';
+  if(!isHumanSetupTurn()&&gameMode==='cpu'){$('smsg').textContent='Computer is placing...';$('smsg').className='smsg';}
+  else if(S.sel){$('smsg').textContent='Click a highlighted square';$('smsg').className='smsg good';}
+  else{$('smsg').textContent=pl;$('smsg').className='smsg';}
+  $('phmsg').innerHTML='<em>'+pn+'</em> proposes ('+(8-S.turn)+' left)';
+}
+function renderPlaceLog(){
+  var c=$('placelog');c.innerHTML='';
+  if(!S.log.length){c.innerHTML='<div class="mle">No placements yet</div>';return;}
+  for(var i=0;i<S.log.length;i++){
+    var e=S.log[i];var el=document.createElement('div');el.className='pe';
+    el.innerHTML='<span class="pep">'+e.pn+'</span> <span class="pec">'+PNAMES[e.p]+'</span> \u2192 <b>'+e.sq+'</b> / <span class="pep">'+e.mn+'</span> \u2192 <b>'+e.msq+'</b>';
+    c.appendChild(el);
+  }
+  c.scrollTop=c.scrollHeight;
+}
+function buildFEN(){
+  var rows=[],r8='',r1='';
+  for(var f=0;f<8;f++){var q=S.b8b[f];r8+=q?fc(q.p,q.c):'1';}
+  rows.push(cc(r8));rows.push('pppppppp');rows.push('8');rows.push('8');rows.push('8');rows.push('8');rows.push('PPPPPPPP');
+  for(var f2=0;f2<8;f2++){var q2=S.b8[f2];r1+=q2?fc(q2.p,q2.c):'1';}
+  rows.push(cc(r1));return rows.join('/')+' w - - 0 1';
+}
+function fc(p,c){return c==='w'?p.toUpperCase():p.toLowerCase();}
+function cc(row){return row.replace(/1+/g,function(m){return m.length;});}
+
+function initPlay(fen){
+  setThinking(false);setPhase('play');
+  var chess=new CG(fen),board=chess.board();
+  var wKf=4,bKf=4,wR=[],bR=[];
+  for(var f=0;f<8;f++){
+    var wp=board[7][f],bp=board[0][f];
+    if(wp){if(wp.type==='k')wKf=f;if(wp.type==='r')wR.push(f);}
+    if(bp){if(bp.type==='k')bKf=f;if(bp.type==='r')bR.push(f);}
+  }
+  P={chess:chess,wKf:wKf,bKf:bKf,wR:wR.slice(),bR:bR.slice(),
+     kMov:{w:false,b:false},rMov:{w:{},b:{}},
+     sel:null,lm:[],co:[],lastMv:null,capW:[],capB:[],hist:[],pp:null,humanColor:S.humanColor};
+  renderBoard();renderPlayStatus();renderMoveLog();renderCaptured();
+  if(gameMode==='cpu'&&P.humanColor==='b') setTimeout(cpuPlay,500);
+}
+function isHumanPlayTurn(){if(gameMode==='local') return true;return P.chess.turn()===P.humanColor;}
+
+function castleOpts(color){
+  var chess=P.chess;if(P.kMov[color]||chess.in_check()) return [];
+  var kf=color==='w'?P.wKf:P.bKf;var rooks=color==='w'?P.wR:P.bR;
+  var rs=color==='w'?'1':'8';var enemy=color==='w'?'b':'w';var opts=[];
+  for(var i=0;i<rooks.length;i++){
+    var rf=rooks[i];if(P.rMov[color][rf]) continue;
+    var dir=rf>kf?1:-1;var adj=Math.abs(rf-kf)===1;
+    var kDest=rf;var rDest=adj?kf:(rf-dir);
+    var lo=Math.min(kf,rf)+1,hi=Math.max(kf,rf)-1,clear=true;
+    for(var f=lo;f<=hi;f++) if(chess.get(FILES[f]+rs)){clear=false;break;}
+    if(!clear) continue;
+    var safe=true;
+    if(adj){if(isAttacked(chess,FILES[rf]+rs,enemy)) safe=false;}
+    else{for(var sq=kf+dir;sq!==(rf+dir);sq+=dir) if(isAttacked(chess,FILES[sq]+rs,enemy)){safe=false;break;}}
+    if(!safe) continue;
+    opts.push({color:color,kFrom:FILES[kf]+rs,kTo:FILES[kDest]+rs,rFrom:FILES[rf]+rs,rTo:FILES[rDest]+rs,kf:kf,rf:rf,kDest:kDest,rDest:rDest});
+  }
+  return opts;
+}
+function execCastle(opt){
+  var chess=P.chess,color=opt.color,rank=color==='w'?7:0;
+  var nb=chess.board().map(function(row){return row.map(function(sq){return sq?{type:sq.type,color:sq.color}:null;});});
+  var kp=nb[rank][opt.kf],rp=nb[rank][opt.rf];
+  nb[rank][opt.kf]=null;nb[rank][opt.rf]=null;nb[rank][opt.kDest]=kp;nb[rank][opt.rDest]=rp;
+  var nc=new CG(b2fen(nb,color==='w'?'b':'w',P.hist.length));
+  if(nc.in_check()){P.sel=null;P.lm=[];P.co=[];renderBoard();return;}
+  P.chess=nc;P.kMov[color]=true;P.rMov[color][opt.rf]=true;
+  if(color==='w'){P.wKf=opt.kDest;P.wR=P.wR.filter(function(x){return x!==opt.rf;});P.wR.push(opt.rDest);}
+  else{P.bKf=opt.kDest;P.bR=P.bR.filter(function(x){return x!==opt.rf;});P.bR.push(opt.rDest);}
+  P.lastMv={from:opt.kFrom,to:opt.kTo};P.hist.push('O-O');P.sel=null;P.lm=[];P.co=[];
+  renderBoard();renderPlayStatus();renderMoveLog();
+  if(gameMode==='cpu'&&!P.chess.game_over()&&!isHumanPlayTurn()) setTimeout(cpuPlay,300);
+}
+function b2fen(board,turn,mn){
+  var rows=[];
+  for(var r=0;r<8;r++){var row='';for(var f=0;f<8;f++){var p=board[r][f];row+=p?fc(p.type,p.color):'1';}rows.push(cc(row));}
+  return rows.join('/')+' '+turn+' - - 0 '+(Math.floor(mn/2)+1);
+}
+function handlePlayClick(sqName){
+  var chess=P.chess;if(chess.game_over()||!isHumanPlayTurn()) return;
+  var clicked=chess.get(sqName);
+  if(P.sel){
+    var sp=chess.get(P.sel);
+    if(sp&&sp.type==='k') for(var i=0;i<P.co.length;i++) if(P.co[i].rFrom===sqName){execCastle(P.co[i]);return;}
+    var mv=null;for(var k=0;k<P.lm.length;k++) if(P.lm[k].to===sqName){mv=P.lm[k];break;}
+    if(mv){
+      if(mv.flags&&mv.flags.indexOf('p')>=0){P.pp={from:P.sel,to:sqName};showPromo(chess.turn());return;}
+      execMove(P.sel,sqName,null);return;
+    }
+    if(clicked&&clicked.color===chess.turn()){selectSq(sqName);return;}
+    P.sel=null;P.lm=[];P.co=[];renderBoard();return;
+  }
+  if(clicked&&clicked.color===chess.turn()) selectSq(sqName);
+}
+function selectSq(sq){
+  P.sel=sq;var piece=P.chess.get(sq);var raw=P.chess.moves({square:sq,verbose:true});
+  if(piece&&piece.type==='k'){
+    P.co=castleOpts(piece.color);var rs={};for(var i=0;i<P.co.length;i++) rs[P.co[i].rFrom]=true;
+    P.lm=raw.filter(function(m){return !rs[m.to];});
+  } else{P.lm=raw;P.co=[];}
+  renderBoard();
+}
+function execMove(from,to,promo){
+  var chess=P.chess,opts={from:from,to:to};if(promo) opts.promotion=promo;
+  var mv=chess.move(opts);if(!mv) return;
+  P.lastMv={from:from,to:to};
+  if(mv.captured){if(mv.color==='w')P.capB.push(mv.captured);else P.capW.push(mv.captured);}
+  if(mv.piece==='k'){P.kMov[mv.color]=true;if(mv.color==='w')P.wKf=FILES.indexOf(to[0]);else P.bKf=FILES.indexOf(to[0]);}
+  if(mv.piece==='r'){
+    var of=FILES.indexOf(from[0]),nf=FILES.indexOf(to[0]);P.rMov[mv.color][of]=true;
+    if(mv.color==='w'){P.wR=P.wR.filter(function(x){return x!==of;});P.wR.push(nf);}
+    else{P.bR=P.bR.filter(function(x){return x!==of;});P.bR.push(nf);}
+  }
+  P.hist.push(mv.san||(from+to));P.sel=null;P.lm=[];P.co=[];
+  renderBoard();renderPlayStatus();renderMoveLog();renderCaptured();
+  if(gameMode==='cpu'&&!chess.game_over()&&!isHumanPlayTurn()) setTimeout(cpuPlay,300);
+}
+
+var PVALS={p:100,n:320,b:330,r:500,q:900,k:20000};
+var PST={
+  p:[0,0,0,0,0,0,0,0,5,10,10,-20,-20,10,10,5,5,-5,-10,0,0,-10,-5,5,0,0,0,20,20,0,0,0,5,5,10,25,25,10,5,5,10,10,20,30,30,20,10,10,50,50,50,50,50,50,50,50,0,0,0,0,0,0,0,0],
+  n:[-50,-40,-30,-30,-30,-30,-40,-50,-40,-20,0,0,0,0,-20,-40,-30,0,10,15,15,10,0,-30,-30,5,15,20,20,15,5,-30,-30,0,15,20,20,15,0,-30,-30,5,10,15,15,10,5,-30,-40,-20,0,5,5,0,-20,-40,-50,-40,-30,-30,-30,-30,-40,-50],
+  b:[-20,-10,-10,-10,-10,-10,-10,-20,-10,0,0,0,0,0,0,-10,-10,0,5,10,10,5,0,-10,-10,5,5,10,10,5,5,-10,-10,0,10,10,10,10,0,-10,-10,10,10,10,10,10,10,-10,-10,5,0,0,0,0,5,-10,-20,-10,-10,-10,-10,-10,-10,-20],
+  r:[0,0,0,0,0,0,0,0,5,10,10,10,10,10,10,5,-5,0,0,0,0,0,0,-5,-5,0,0,0,0,0,0,-5,-5,0,0,0,0,0,0,-5,-5,0,0,0,0,0,0,-5,-5,0,0,0,0,0,0,-5,0,0,0,5,5,0,0,0],
+  q:[-20,-10,-10,-5,-5,-10,-10,-20,-10,0,0,0,0,0,0,-10,-10,0,5,5,5,5,0,-10,-5,0,5,5,5,5,0,-5,0,0,5,5,5,5,0,-5,-10,5,5,5,5,5,0,-10,-10,0,5,0,0,0,0,-10,-20,-10,-10,-5,-5,-10,-10,-20],
+  k:[-30,-40,-40,-50,-50,-40,-40,-30,-30,-40,-40,-50,-50,-40,-40,-30,-30,-40,-40,-50,-50,-40,-40,-30,-30,-40,-40,-50,-50,-40,-40,-30,-20,-30,-30,-40,-40,-30,-30,-20,-10,-20,-20,-20,-20,-20,-20,-10,20,20,0,0,0,0,20,20,20,30,10,0,0,10,30,20]
+};
+function pst(type,color,r,f){var tbl=PST[type];if(!tbl) return 0;var idx=color==='w'?(r*8+f):((7-r)*8+f);return tbl[idx]||0;}
+function evalBoard(){
+  var sc=0,b=P.chess.board();
+  for(var r=0;r<8;r++) for(var f=0;f<8;f++){var p=b[r][f];if(!p) continue;var sign=p.color==='w'?1:-1;sc+=sign*((PVALS[p.type]||0)+pst(p.type,p.color,r,f));}
+  return sc;
+}
+function minimax(d,alpha,beta,max){
+  var chess=P.chess;if(d===0||chess.game_over()) return evalBoard();
+  var ms=chess.moves({verbose:true});
+  if(max){var bst=-Infinity;for(var i=0;i<ms.length;i++){chess.move(ms[i]);var v=minimax(d-1,alpha,beta,false);chess.undo();if(v>bst)bst=v;if(bst>alpha)alpha=bst;if(beta<=alpha)break;}return bst;}
+  else{var bst2=Infinity;for(var j=0;j<ms.length;j++){chess.move(ms[j]);var v2=minimax(d-1,alpha,beta,true);chess.undo();if(v2<bst2)bst2=v2;if(bst2<beta)beta=bst2;if(beta<=alpha)break;}return bst2;}
+}
+function cpuPlay(){
+  var chess=P.chess;if(chess.game_over()||isHumanPlayTurn()) return;
+  setThinking(true);
+  setTimeout(function(){
+    var ms=chess.moves({verbose:true});if(!ms.length){setThinking(false);return;}
+    var isMax=chess.turn()==='w';var best=null,bs=isMax?-Infinity:Infinity;
+    for(var i=0;i<ms.length;i++){chess.move(ms[i]);var s=minimax(mmDepth-1,-Infinity,Infinity,!isMax);chess.undo();if(isMax?s>bs:s<bs){bs=s;best=ms[i];}}
+    setThinking(false);var mv=chess.move(best||ms[0]);if(mv) applyCpuMove(mv);
+  },10);
+}
+function applyCpuMove(mv){
+  P.lastMv={from:mv.from,to:mv.to};
+  if(mv.captured){if(mv.color==='w')P.capB.push(mv.captured);else P.capW.push(mv.captured);}
+  if(mv.piece==='k'){P.kMov[mv.color]=true;if(mv.color==='w')P.wKf=FILES.indexOf(mv.to[0]);else P.bKf=FILES.indexOf(mv.to[0]);}
+  if(mv.piece==='r'){var of=FILES.indexOf(mv.from[0]);P.rMov[mv.color][of]=true;if(mv.color==='w'){P.wR=P.wR.filter(function(x){return x!==of;});P.wR.push(FILES.indexOf(mv.to[0]));}else{P.bR=P.bR.filter(function(x){return x!==of;});P.bR.push(FILES.indexOf(mv.to[0]));}}
+  P.hist.push(mv.san||(mv.from+mv.to));P.sel=null;P.lm=[];P.co=[];
+  renderBoard();renderPlayStatus();renderMoveLog();renderCaptured();
+}
+function setThinking(on){$('thinking').className='thinking'+(on?' show':'');if(on)$('thinkinglbl').textContent='Level '+cfgDiff+' thinking...';}
+function showPromo(color){
+  var back=$('promo'),pp=$('ppieces');pp.innerHTML='';
+  var opts=color==='w'?[['q','\u2655'],['r','\u2656'],['b','\u2657'],['n','\u2658']]
+                      :[['q','\u265B'],['r','\u265C'],['b','\u265D'],['n','\u265E']];
+  for(var i=0;i<opts.length;i++){
+    var el=document.createElement('div');el.className='pp';el.textContent=opts[i][1];
+    (function(t){el.addEventListener('click',function(){back.classList.remove('show');var p2=P.pp;P.pp=null;execMove(p2.from,p2.to,t);});})(opts[i][0]);
+    pp.appendChild(el);
+  }
+  back.classList.add('show');
+}
+
+function renderBoard(){
+  var bd=$('board');bd.innerHTML='';
+  var ro=flipped?[0,1,2,3,4,5,6,7]:[7,6,5,4,3,2,1,0];
+  var fo=flipped?[7,6,5,4,3,2,1,0]:[0,1,2,3,4,5,6,7];
+  ['fltop','flbot'].forEach(function(id){
+    $(id).innerHTML='';$(id).style.paddingLeft='16px';
+    for(var i=0;i<fo.length;i++){var el=document.createElement('div');el.className='flc';el.textContent=FILES[fo[i]];$(id).appendChild(el);}
+  });
+  var rcc=$('rcc');rcc.innerHTML='';
+  for(var i=0;i<ro.length;i++){var el=document.createElement('div');el.className='rkl';el.textContent=ro[i]+1;rcc.appendChild(el);}
+  if(phase==='setup') renderSetupBoard(bd,ro,fo);else renderPlayBoard(bd,ro,fo);
+}
+function renderSetupBoard(bd,ro,fo){
+  var interactive=isHumanSetupTurn();var prop=activeColor();var propRank=prop==='w'?0:7;
+  var avail=S.sel?availFs(S.sel):[];var lgs=lastGapSq();
+  for(var ri=0;ri<ro.length;ri++){
+    var rnk=ro[ri];
+    for(var fi=0;fi<fo.length;fi++){
+      var file=fo[fi];var isLight=(file+rnk)%2===1;
+      var cell=document.createElement('div');cell.className='sq '+(isLight?'lt':'dk');
+      var sqObj=rnk===0?S.b8[file]:(rnk===7?S.b8b[file]:null);
+      if(sqObj) cell.appendChild(mkPiece(sqObj.c,sqObj.p,42));
+      else if(rnk===1) cell.appendChild(mkPiece('w','p',42));
+      else if(rnk===6) cell.appendChild(mkPiece('b','p',42));
+      if(lgs===file&&rnk===propRank&&!sqObj) cell.classList.add('resv');
+      if(interactive&&S.sel&&rnk===propRank&&!sqObj){
+        var ok=false;for(var k=0;k<avail.length;k++) if(avail[k]===file){ok=true;break;}
+        if(ok){cell.classList.add('avail');(function(f2){cell.addEventListener('click',function(){handleSetupClick(f2);});})(file);}
+      }
+      bd.appendChild(cell);
+    }
+  }
+}
+function renderPlayBoard(bd,ro,fo){
+  var chess=P.chess,pos=chess.board();var nt={},ct={},castleRS={};
+  for(var i=0;i<P.lm.length;i++){var m=P.lm[i];nt[m.to]=true;if(m.flags&&(m.flags.indexOf('c')>=0||m.flags.indexOf('e')>=0)) ct[m.to]=true;}
+  for(var ci=0;ci<P.co.length;ci++) castleRS[P.co[ci].rFrom]=true;
+  var kingChk=null;
+  if(chess.in_check()){var turn=chess.turn();for(var r=0;r<8;r++) for(var f=0;f<8;f++){var p=pos[r][f];if(p&&p.type==='k'&&p.color===turn) kingChk=FILES[f]+(8-r);}}
+  for(var ri=0;ri<ro.length;ri++){
+    var rank=ro[ri];
+    for(var fi=0;fi<fo.length;fi++){
+      var file=fo[fi],sqName=FILES[file]+(rank+1);var isLight=(file+rank)%2===1;
+      var cell=document.createElement('div');cell.className='sq '+(isLight?'lt':'dk');
+      if(sqName===P.sel) cell.classList.add('sel');
+      else if(P.lastMv&&sqName===P.lastMv.from) cell.classList.add('lf');
+      else if(P.lastMv&&sqName===P.lastMv.to) cell.classList.add('lt2');
+      if(nt[sqName]) cell.classList.add(ct[sqName]?'ring':'dot');
+      if(castleRS[sqName]) cell.classList.add('castle');
+      if(sqName===kingChk) cell.classList.add('chk');
+      var piece=pos[7-rank][file];if(piece) cell.appendChild(mkPiece(piece.color,piece.type,42));
+      (function(sq){cell.addEventListener('click',function(){handlePlayClick(sq);});})(sqName);
+      bd.appendChild(cell);
+    }
+  }
+}
+function renderPlayStatus(){
+  var chess=P.chess,turn=chess.turn();var tt,mt,mc='smsg';
+  if(chess.in_checkmate()){var w=turn==='w'?'Black':'White';tt='Game over';mt=w+' wins by checkmate!';$('phmsg').innerHTML='<em>Checkmate</em> \u2014 '+w+' wins';}
+  else if(chess.in_draw()){tt='Draw';mt=chess.in_stalemate()?'Stalemate':chess.insufficient_material()?'Insufficient material':chess.in_threefold_repetition()?'Threefold repetition':'50-move rule';$('phmsg').innerHTML='<em>Draw</em>';}
+  else if(chess.in_check()){tt=(turn==='w'?'White':'Black')+' to move';mt='Check!';mc+=' warn';$('phmsg').innerHTML='<em>'+(turn==='w'?'White':'Black')+' is in check</em>';}
+  else{tt=(turn==='w'?'White':'Black')+' to move';mt=isHumanPlayTurn()?'Select a piece':(gameMode==='cpu'?'Computer thinking...':'')+'';$('phmsg').innerHTML='<em>'+(turn==='w'?'White':'Black')+'</em> to move';}
+  $('turn').textContent=tt;$('smsg').textContent=mt;$('smsg').className=mc;
+}
+function renderMoveLog(){
+  var ml=$('mlbody'),h=P.hist;ml.innerHTML='';
+  if(!h.length){ml.innerHTML='<div class="mle">No moves yet</div>';return;}
+  for(var i=0;i<h.length;i+=2){
+    var row=document.createElement('div');row.className='mrow';
+    var num=document.createElement('span');num.className='mn';num.textContent=(Math.floor(i/2)+1)+'.';
+    var w=document.createElement('span');w.className='mw';w.textContent=h[i];
+    row.appendChild(num);row.appendChild(w);
+    if(h[i+1]){var b=document.createElement('span');b.className='mb';b.textContent=h[i+1];row.appendChild(b);}
+    ml.appendChild(row);
+  }
+  ml.scrollTop=ml.scrollHeight;
+}
+function renderCaptured(){
+  var te=$('captop'),be=$('capbot');te.innerHTML='';be.innerHTML='';
+  var lbl=function(t){var s=document.createElement('span');s.className='caplbl';s.textContent=t;return s;};
+  te.appendChild(lbl('Captured:'));
+  if(P.capB.length) for(var i=0;i<P.capB.length;i++) te.appendChild(mkPiece('b',P.capB[i],22));
+  else te.appendChild(Object.assign(document.createElement('span'),{textContent:'\u2014',style:'color:#333;font-size:11px'}));
+  be.appendChild(lbl('Captured:'));
+  if(P.capW.length) for(var j=0;j<P.capW.length;j++) be.appendChild(mkPiece('w',P.capW[j],22));
+  else be.appendChild(Object.assign(document.createElement('span'),{textContent:'\u2014',style:'color:#333;font-size:11px'}));
+}
+$('btn-new').addEventListener('click',function(){showModal();});
+$('btn-flip').addEventListener('click',function(){flipped=!flipped;renderBoard();});
+$('btn-undo').addEventListener('click',function(){
+  if(phase==='setup'){
+    if(!S.log.length) return;
+    var last=S.log[S.log.length-1];S.log.pop();
+    var fi=FILES.indexOf(last.sq[0]);S.b8[fi]=null;S.b8b[fi]=null;S.wr[last.p]++;S.br[last.p]++;
+    if(last.p==='k') S.kingPlaced=false;S.turn=last.turn;S.sel=null;
+    renderBoard();renderTrays();renderPlaceLog();renderSetupStatus();
+  } else {
+    if(!P.hist.length) return;
+    var n=gameMode==='cpu'?2:1;
+    for(var i=0;i<n;i++){var r=P.chess.undo();if(!r) break;if(r.captured){if(r.color==='w')P.capB.pop();else P.capW.pop();}if(r.piece==='k') P.kMov[r.color]=false;P.hist.pop();}
+    P.lastMv=null;var h=P.chess.history({verbose:true});if(h.length) P.lastMv={from:h[h.length-1].from,to:h[h.length-1].to};
+    var brd=P.chess.board();for(var r2=0;r2<8;r2++) for(var f2=0;f2<8;f2++){var p=brd[r2][f2];if(p&&p.type==='k'){if(p.color==='w')P.wKf=f2;else P.bKf=f2;}}
+    P.sel=null;P.lm=[];P.co=[];setThinking(false);renderBoard();renderPlayStatus();renderMoveLog();renderCaptured();
+  }
+});
+flipped=false;gameMode='cpu';showModal();
+})();
+</script>
+</body>
+</html>
